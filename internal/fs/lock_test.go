@@ -145,32 +145,3 @@ func TestTryLockBusy(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-
-func TestLockStamp(t *testing.T) {
-	path := filepath.Join(t.TempDir(), ".fsentry.lock")
-	file, err := OpenLock(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = Close(file) })
-
-	_, ok, err := ReadLockStamp(file)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if ok {
-		t.Fatal("empty lock file should have no stamp")
-	}
-
-	const nano = int64(123456789)
-	if err := WriteLockStamp(file, nano); err != nil {
-		t.Fatal(err)
-	}
-	got, ok, err := ReadLockStamp(file)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !ok || got != nano {
-		t.Fatalf("got %d ok=%v, want %d", got, ok, nano)
-	}
-}

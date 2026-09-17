@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-// Sentinels returned by create helpers. Higher layers must match these with
+// Sentinels returned by helpers. Higher layers must match these with
 // errors.Is; they must not inspect syscall.Errno.
 var (
 	ErrExist        = errors.New("already exists")

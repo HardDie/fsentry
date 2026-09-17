@@ -322,7 +322,7 @@ This file stays lean. **[README.md](README.md)** is the short user entry (what t
 |---|---|
 | What the library is, install, example | **[README.md](README.md)** |
 | On-disk format, API, layout | this file |
-| Why a decision was made | `docs/architecture/` |
+| Why a decision was made | **[docs/architecture](docs/architecture/INDEX.md)** |
 | Consumer that must keep working | `../DeckBuilder/internal/db/` |
 | Previous implementation (do not copy tree) | `../fsentry` |
 
@@ -349,7 +349,7 @@ This is a **library**, not an application. No `cmd/` until someone asks for a CL
 ├── fsentry_bench_test.go       # ReportAllocs
 ├── lock_integration_test.go    # //go:build integration; lock file on
 ├── internal/
-│   ├── fs/                     # OS create file/folder; map errors (unix + windows)
+│   ├── fs/                     # OS adapter: file.go, dir.go, lock_*.go, error_*.go
 │   ├── lock/                   # advisory lock file (unix + windows)
 │   ├── name/                   # NameToID into []byte
 │   └── jsonutil/               # marshal envelope, pretty flag, scratch buf
@@ -430,13 +430,14 @@ Collapse by **object**, not by layer.
 
 **Import direction:** public `fsentry` → `internal/fs`, `internal/lock`, `internal/name`, `internal/jsonutil`. Internals must not import the public API in a cycle; they may use stdlib plus `x/sys` and `copy`.
 
-**`internal/fs` owns syscalls.** Other packages do not call `os.OpenFile`, `os.Mkdir`, `os.File.Write`/`Read`/`Close`/`Sync`, `os.Rename`, `os.Remove`/`RemoveAll`, `os.ReadDir`, or `os.Stat`.
+**`internal/fs` owns syscalls.** Other packages do not call `os.OpenFile`, `os.Mkdir`, `os.File.Write`/`WriteAt`/`Read`/`ReadAt`/`Close`/`Sync`/`Truncate`, `os.Rename`, `os.Remove`/`RemoveAll`, `os.ReadDir`, or `os.Stat`. Files follow package `os`: `file.go`, `dir.go`, `lock.go` + `lock_unix.go`/`lock_windows.go`, `error.go` + `mapOS` per GOOS. Stamp/steal live in `internal/lock`.
 
 | Helper | Behavior |
 |---|---|
 | `CreateFile` | `O_EXCL`, empty write-only handle |
 | `OpenRead` / `OpenWrite` | existing file; write truncates, no `O_CREATE` |
 | `Write` / `Read` | all bytes / until EOF into caller buf |
+| `WriteAt` / `ReadAt` / `Truncate` | offset I/O; short `ReadAt` is success |
 | `Close` / `Sync` | handle close / fsync |
 | `CreateFolder` | `Mkdir` only (no parents) |
 | `RenameFile` / `RenameFolder` | `os.Rename` (no copy) |
@@ -444,9 +445,8 @@ Collapse by **object**, not by layer.
 | `RemoveFolder` | `Stat` then recursive `RemoveAll`; missing is `ErrNotExist` |
 | `ReadDir` / `Stat` | one directory listing / `FileInfo` |
 | `OpenLock` / `Lock` / `TryLock` / `Unlock` | lock file: `O_RDWR\|O_CREATE`; exclusive `flock` / `LockFileEx`; `TryLock` → `ErrBusy` |
-| `WriteLockStamp` / `ReadLockStamp` | 8-byte big-endian unix nano at offset 0 |
 
-Helpers return only: `ErrExist`, `ErrNotExist`, `ErrPermission`, `ErrNotDirectory`, `ErrIsDirectory`, `ErrNoSpace`, `ErrReadOnly`, `ErrLock`, `ErrBusy`, `ErrInternal`. The OS error is classified then dropped (`wrap` is zero-alloc). Higher code `errors.Is` those sentinels; it does not inspect `syscall.Errno`. `mapOS` is split `error_unix.go` / `error_windows.go`. `internal/lock` opens the file, writes the stamp, polls `TryLock`, and steals after `DefaultTimeout`.
+Helpers return only: `ErrExist`, `ErrNotExist`, `ErrPermission`, `ErrNotDirectory`, `ErrIsDirectory`, `ErrNoSpace`, `ErrReadOnly`, `ErrLock`, `ErrBusy`, `ErrInternal`. The OS error is classified then dropped (`wrap` is zero-alloc). Higher code `errors.Is` those sentinels; it does not inspect `syscall.Errno`. `mapOS` is split `error_unix.go` / `error_windows.go`. `internal/lock` opens the file, writes the stamp (`stamp.go`), polls `TryLock`, and steals after `DefaultTimeout`.
 
 ---
 

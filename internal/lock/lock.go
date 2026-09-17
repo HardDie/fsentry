@@ -97,11 +97,11 @@ func (l *File) Close() error {
 }
 
 func (l *File) writeStamp() error {
-	return fs.WriteLockStamp(l.file, l.now().UnixNano())
+	return writeStamp(l.file, l.now().UnixNano())
 }
 
 func (l *File) stale() (bool, error) {
-	ns, ok, err := fs.ReadLockStamp(l.file)
+	ns, ok, err := readStamp(l.file)
 	if err != nil {
 		return false, err
 	}
