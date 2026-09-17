@@ -29,6 +29,8 @@ func mapOS(err error) error {
 		return wrap(ErrReadOnly, err)
 	case syscall.ENOTEMPTY:
 		return wrap(ErrExist, err)
+	case syscall.EDEADLK:
+		return wrap(ErrLock, err)
 	default:
 		return nil
 	}

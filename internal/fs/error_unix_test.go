@@ -28,6 +28,7 @@ func TestMapErrorUnix(t *testing.T) {
 		{"edquot", syscall.EDQUOT, ErrNoSpace},
 		{"erofs", syscall.EROFS, ErrReadOnly},
 		{"enotempty", syscall.ENOTEMPTY, ErrExist},
+		{"edeadlk", syscall.EDEADLK, ErrLock},
 		{"unknown", errors.New("cosmic ray"), ErrInternal},
 	}
 	for _, tc := range cases {

@@ -15,6 +15,8 @@ var (
 	ErrIsDirectory  = errors.New("is a directory")
 	ErrNoSpace      = errors.New("no space left on device")
 	ErrReadOnly     = errors.New("read-only file system")
+	ErrLock         = errors.New("lock failed")
+	ErrBusy         = errors.New("resource busy")
 	ErrInternal     = errors.New("internal error")
 )
 

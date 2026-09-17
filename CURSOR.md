@@ -127,7 +127,7 @@ Skip other files. Old fsentry omitted binaries from `List`; this rewrite include
 
 **Writes.** Create uses `O_CREATE|O_EXCL` (exist → `ErrExist`). Update truncates an existing file (missing → `ErrNotExist`). Prefer write-to-temp-in-same-dir + `Sync` + `Rename` for JSON so a crash does not leave a half file. Create folder: `Mkdir` the ID directory, then create `.info.json`; if the info file fails, remove the empty directory. `RemoveFolder` is recursive (`RemoveAll`). Duplicate folder is a deep copy, then rewrite the destination `.info.json` with the new name/id and fresh timestamps.
 
-**Lock file.** Production stores take an advisory exclusive lock on `<root>/.fsentry.lock` for the duration of each public operation (`flock` / `LockFileEx`, not a busy-wait “write pid and hope”). `Init` creates the file. `Drop` unlocks, closes, then removes the root. Hidden; `List` ignores it. This is **on by default**. Unit tests, integration tests, and benchmarks pass `WithNoLockFile()` so they stay fast, isolated, and race-detector-friendly. The exception is tests whose job is locking: those omit the option (or use `WithLockFile()`) and prove two `*DB` handles on the same root cannot enter a write at the same time. Do not spawn extra processes unless a lock test cannot be done with two handles in one process.
+**Lock file.** Production stores take an advisory exclusive lock on `<root>/.fsentry.lock` for the duration of each public operation (`flock` / `LockFileEx`, not a busy-wait “write pid and hope”). On acquire, the locker writes an 8-byte unix-nano stamp. If a waiter cannot take the lock and the stamp (or mtime if the stamp is missing) is older than the lock timeout, it **steals**: unlink the file, open a new inode, lock that. Default timeout is **10 minutes** (`internal/lock.DefaultTimeout`); `WithLockTimeout` on `New`/`Init` changes it. A crash usually drops the OS lock immediately; steal covers a hung process or a filesystem that keeps the lock. `Init` creates the file. `Drop` unlocks, closes, then removes the root. Hidden; `List` ignores it. This is **on by default**. Unit tests, integration tests, and benchmarks pass `WithNoLockFile()` so they stay fast, isolated, and race-detector-friendly. The exception is tests whose job is locking: those omit the option (or use `WithLockFile()`) and prove two `*DB` handles on the same root cannot enter a write at the same time. Do not spawn extra processes unless a lock test cannot be done with two handles in one process.
 
 **Permissions.** Directories `0755`, files `0666` masked by umask (same idea as old code). Do not chmod through ACLs unless a Windows-only test proves we need `go-acl` again.
 
@@ -152,6 +152,7 @@ got, err := db.GetEntry[Settings]("settings")
 | `WithPretty()` | compact JSON | indent with a tab |
 | `WithLogger(Logger)` | discard | unexpected sync/close |
 | `WithNoLockFile()` | lock **on** | tests and benchmarks only |
+| `WithLockTimeout(d)` | 10 minutes | steal if the lock stamp is older than `d`; `d <= 0` keeps the default |
 
 No global state. Production callers do not pass `WithNoLockFile()`.
 
@@ -220,6 +221,7 @@ Language: `go 1.27` in `go.mod` (generic methods). CI and local toolchain: lates
 | `ErrFolderCorrupted` | folder dir exists, `.info.json` unreadable |
 | `ErrPermission` | OS permission denied |
 | `ErrLock` | lock file open/flock failed |
+| `ErrBusy` | `TryLock` while another handle holds the lock (internal; steal path) |
 | `ErrInternal` | unexpected OS/JSON failure |
 
 Do not panic on missing files. Do not return `os.ErrNotExist` as the only error; wrap so callers can keep using `fsentry.ErrNotExist` like DeckBuilder uses `fsentry_error.ErrorNotExist`. Keep aliases `ErrorNotExist` = `ErrNotExist` only if a compatibility shim is requested; default to `Err*` names and document the mapping for DeckBuilder.
@@ -227,7 +229,7 @@ Do not panic on missing files. Do not return `os.ErrNotExist` as the only error;
 **Concurrency (two layers)**
 
 1. **In-process:** `sync.RWMutex` on `*DB` (write = Lock, Get/List = RLock). Required because a shared lock-file FD does not serialize goroutines.
-2. **Inter-process:** exclusive advisory lock on `.fsentry.lock` for every public method (reads included; keep it simple). Default on.
+2. **Inter-process:** exclusive advisory lock on `.fsentry.lock` for every public method (reads included; keep it simple). Default on. Waiters poll `TryLock` (~100ms). Stamp older than `WithLockTimeout` (default 10m) → steal.
 
 Order: mutex first, then flock; reverse on the way out. `WithNoLockFile()` skips layer 2 only.
 
@@ -265,6 +267,8 @@ Goal: **zero allocations** on paths we control. `encoding/json` will still alloc
 | `NameToID` into a reused buffer | 0 allocs |
 | `Read` into a sized buffer | **0 allocs** |
 | `OpenRead` / `OpenWrite` / `Close` / `Sync` / `Stat` / `ReadDir` / `RemoveFile` / `RemoveFolder` | report OS allocs |
+| `Lock` / `Unlock` | report OS allocs (same FD) |
+| `internal/lock` `Lock` / `Unlock` | report OS allocs including stamp write |
 | `CreateBinary` / `UpdateBinary` of a fixed `[]byte` | 0 extra besides OS |
 | `GetEntry[struct{…}]` of a small fixed struct | report allocs; fight extras outside `json` |
 | `List` of a small directory | report allocs (OS `Readdir` will allocate names) |
@@ -439,8 +443,10 @@ Collapse by **object**, not by layer.
 | `RemoveFile` | `unlink` only (not rmdir) |
 | `RemoveFolder` | `Stat` then recursive `RemoveAll`; missing is `ErrNotExist` |
 | `ReadDir` / `Stat` | one directory listing / `FileInfo` |
+| `OpenLock` / `Lock` / `TryLock` / `Unlock` | lock file: `O_RDWR\|O_CREATE`; exclusive `flock` / `LockFileEx`; `TryLock` → `ErrBusy` |
+| `WriteLockStamp` / `ReadLockStamp` | 8-byte big-endian unix nano at offset 0 |
 
-Helpers return only: `ErrExist`, `ErrNotExist`, `ErrPermission`, `ErrNotDirectory`, `ErrIsDirectory`, `ErrNoSpace`, `ErrReadOnly`, `ErrInternal`. The OS error is classified then dropped (`wrap` is zero-alloc). Higher code `errors.Is` those sentinels; it does not inspect `syscall.Errno`. `mapOS` is split `error_unix.go` / `error_windows.go`.
+Helpers return only: `ErrExist`, `ErrNotExist`, `ErrPermission`, `ErrNotDirectory`, `ErrIsDirectory`, `ErrNoSpace`, `ErrReadOnly`, `ErrLock`, `ErrBusy`, `ErrInternal`. The OS error is classified then dropped (`wrap` is zero-alloc). Higher code `errors.Is` those sentinels; it does not inspect `syscall.Errno`. `mapOS` is split `error_unix.go` / `error_windows.go`. `internal/lock` opens the file, writes the stamp, polls `TryLock`, and steals after `DefaultTimeout`.
 
 ---
 

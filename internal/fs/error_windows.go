@@ -5,6 +5,8 @@ package fs
 import (
 	"errors"
 	"syscall"
+
+	"golang.org/x/sys/windows"
 )
 
 func mapOS(err error) error {
@@ -12,21 +14,23 @@ func mapOS(err error) error {
 	if !errors.As(err, &errno) {
 		return nil
 	}
-	switch errno {
-	case syscall.ERROR_ALREADY_EXISTS, syscall.ERROR_FILE_EXISTS:
+	switch windows.Errno(errno) {
+	case windows.ERROR_ALREADY_EXISTS, windows.ERROR_FILE_EXISTS:
 		return wrap(ErrExist, err)
-	case syscall.ERROR_FILE_NOT_FOUND, syscall.ERROR_PATH_NOT_FOUND:
+	case windows.ERROR_FILE_NOT_FOUND, windows.ERROR_PATH_NOT_FOUND:
 		return wrap(ErrNotExist, err)
-	case syscall.ERROR_ACCESS_DENIED:
+	case windows.ERROR_ACCESS_DENIED:
 		return wrap(ErrPermission, err)
-	case syscall.ERROR_DIRECTORY:
+	case windows.ERROR_DIRECTORY:
 		return wrap(ErrNotDirectory, err)
-	case syscall.ERROR_WRITE_PROTECT:
+	case windows.ERROR_WRITE_PROTECT:
 		return wrap(ErrReadOnly, err)
-	case syscall.ERROR_DISK_FULL, syscall.ERROR_HANDLE_DISK_FULL:
+	case windows.ERROR_DISK_FULL, windows.ERROR_HANDLE_DISK_FULL:
 		return wrap(ErrNoSpace, err)
-	case syscall.ERROR_DIR_NOT_EMPTY:
+	case windows.ERROR_DIR_NOT_EMPTY:
 		return wrap(ErrExist, err)
+	case windows.ERROR_LOCK_VIOLATION:
+		return wrap(ErrLock, err)
 	default:
 		return nil
 	}

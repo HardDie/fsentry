@@ -23,3 +23,7 @@ Copy [\_TEMPLATE.md](_TEMPLATE.md) when behavior lands.
 | UC-13 | Remove a folder | `internal/fs` | Done | [fs/uc-13-remove-folder.md](fs/uc-13-remove-folder.md) |
 | UC-14 | Read a directory listing | `internal/fs` | Done | [fs/uc-14-readdir.md](fs/uc-14-readdir.md) |
 | UC-15 | Stat a path | `internal/fs` | Done | [fs/uc-15-stat.md](fs/uc-15-stat.md) |
+| UC-16 | Open a lock file | `internal/fs` | Done | [fs/uc-16-open-lock.md](fs/uc-16-open-lock.md) |
+| UC-17 | Exclusive lock and unlock | `internal/fs` | Done | [fs/uc-17-lock-unlock.md](fs/uc-17-lock-unlock.md) |
+| UC-18 | Non-blocking try-lock | `internal/fs` | Done | [fs/uc-18-try-lock.md](fs/uc-18-try-lock.md) |
+| UC-19 | Steal a stale lock | `internal/lock` | Done | [lock/uc-19-steal-stale-lock.md](lock/uc-19-steal-stale-lock.md) |
