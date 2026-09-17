@@ -263,7 +263,8 @@ Goal: **zero allocations** on paths we control. `encoding/json` will still alloc
 | `Write` (reused buffer) | **0 allocs** beyond `os.File.Write` |
 | `RenameFile` / `RenameFolder` | report OS allocs |
 | `NameToID` into a reused buffer | 0 allocs |
-| `GetBinary` into a sized buffer | 0 allocs after warmup |
+| `Read` into a sized buffer | **0 allocs** |
+| `OpenRead` / `OpenWrite` / `Close` / `Sync` / `Stat` / `ReadDir` / `RemoveFile` / `RemoveFolder` | report OS allocs |
 | `CreateBinary` / `UpdateBinary` of a fixed `[]byte` | 0 extra besides OS |
 | `GetEntry[struct{…}]` of a small fixed struct | report allocs; fight extras outside `json` |
 | `List` of a small directory | report allocs (OS `Readdir` will allocate names) |
@@ -425,7 +426,21 @@ Collapse by **object**, not by layer.
 
 **Import direction:** public `fsentry` → `internal/fs`, `internal/lock`, `internal/name`, `internal/jsonutil`. Internals must not import the public API in a cycle; they may use stdlib plus `x/sys` and `copy`.
 
-**`internal/fs` owns syscalls.** Other packages do not call `os.OpenFile`, `os.Mkdir`, `os.File.Write`, or `os.Rename`. `CreateFile` is `O_EXCL` (empty file, write-only handle). `Write` writes all bytes to that handle. `CreateFolder` is `Mkdir` only (no parents). `RenameFile` / `RenameFolder` are `os.Rename` (no copy). Helpers return only: `ErrExist`, `ErrNotExist`, `ErrPermission`, `ErrNotDirectory`, `ErrIsDirectory`, `ErrNoSpace`, `ErrReadOnly`, `ErrInternal`. The OS error is classified then dropped (`wrap` is zero-alloc). Higher code `errors.Is` those sentinels; it does not inspect `syscall.Errno`. `mapOS` is split `error_unix.go` / `error_windows.go`.
+**`internal/fs` owns syscalls.** Other packages do not call `os.OpenFile`, `os.Mkdir`, `os.File.Write`/`Read`/`Close`/`Sync`, `os.Rename`, `os.Remove`/`RemoveAll`, `os.ReadDir`, or `os.Stat`.
+
+| Helper | Behavior |
+|---|---|
+| `CreateFile` | `O_EXCL`, empty write-only handle |
+| `OpenRead` / `OpenWrite` | existing file; write truncates, no `O_CREATE` |
+| `Write` / `Read` | all bytes / until EOF into caller buf |
+| `Close` / `Sync` | handle close / fsync |
+| `CreateFolder` | `Mkdir` only (no parents) |
+| `RenameFile` / `RenameFolder` | `os.Rename` (no copy) |
+| `RemoveFile` | `unlink` only (not rmdir) |
+| `RemoveFolder` | `Stat` then recursive `RemoveAll`; missing is `ErrNotExist` |
+| `ReadDir` / `Stat` | one directory listing / `FileInfo` |
+
+Helpers return only: `ErrExist`, `ErrNotExist`, `ErrPermission`, `ErrNotDirectory`, `ErrIsDirectory`, `ErrNoSpace`, `ErrReadOnly`, `ErrInternal`. The OS error is classified then dropped (`wrap` is zero-alloc). Higher code `errors.Is` those sentinels; it does not inspect `syscall.Errno`. `mapOS` is split `error_unix.go` / `error_windows.go`.
 
 ---
 
