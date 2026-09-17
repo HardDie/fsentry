@@ -25,6 +25,8 @@ func mapOS(err error) error {
 		return wrap(ErrReadOnly, err)
 	case syscall.ERROR_DISK_FULL, syscall.ERROR_HANDLE_DISK_FULL:
 		return wrap(ErrNoSpace, err)
+	case syscall.ERROR_DIR_NOT_EMPTY:
+		return wrap(ErrExist, err)
 	default:
 		return nil
 	}

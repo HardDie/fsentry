@@ -11,3 +11,6 @@ Copy [\_TEMPLATE.md](_TEMPLATE.md) when behavior lands.
 | UC-01 | Create a file | `internal/fs` | Done | [fs/uc-01-create-file.md](fs/uc-01-create-file.md) |
 | UC-02 | Create a folder | `internal/fs` | Done | [fs/uc-02-create-folder.md](fs/uc-02-create-folder.md) |
 | UC-03 | Map an OS error to a sentinel | `internal/fs` | Done | [fs/uc-03-map-os-error.md](fs/uc-03-map-os-error.md) |
+| UC-04 | Write data to a file | `internal/fs` | Done | [fs/uc-04-write-file.md](fs/uc-04-write-file.md) |
+| UC-05 | Rename a file | `internal/fs` | Done | [fs/uc-05-rename-file.md](fs/uc-05-rename-file.md) |
+| UC-06 | Rename a folder | `internal/fs` | Done | [fs/uc-06-rename-folder.md](fs/uc-06-rename-folder.md) |

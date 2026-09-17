@@ -13,6 +13,8 @@
 3. It returns the package sentinel only (`wrap` does not `Join` or format the OS error). That keeps **zero allocations**. Callers `errors.Is` the sentinel; the original errno is not retained.
 4. If `err` is `nil`, `mapError` returns `nil` with **zero allocations**.
 
+Rename of a non-empty destination directory maps `ENOTEMPTY` / `ERROR_DIR_NOT_EMPTY` to `ErrExist`.
+
 ## Alternative scenarios and errors
 
 Sentinels (complete list for this package):

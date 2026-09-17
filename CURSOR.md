@@ -254,12 +254,14 @@ Goal: **zero allocations** on paths we control. `encoding/json` will still alloc
 - Intern every ID in a map “for speed” (hidden allocs + memory growth).
 - Disable the mutex in benchmarks; **do** use `WithNoLockFile()` so the bench is not measuring `flock`.
 
-**Benchmark files:** `*_bench_test.go` next to the code (no build tag unless OS-specific). `b.ReportAllocs()`. At least:
+**Benchmark files:** `*_bench_test.go` next to the **exported** helpers (no build tag unless OS-specific). `b.ReportAllocs()`. Do not add `Benchmark*` for unexported functions (`wrap`, `mapError`, `mapOS`); keep `testing.AllocsPerRun` in unit tests for those.
 
 | Benchmark | What |
 |---|---|
-| `wrap` / `mapError` | **0 allocs** (return the sentinel; do not Join/format the OS error) |
 | `CreateFile` / `CreateFolder` | report OS allocs |
+| `Write` empty buffer | **0 allocs** |
+| `Write` (reused buffer) | **0 allocs** beyond `os.File.Write` |
+| `RenameFile` / `RenameFolder` | report OS allocs |
 | `NameToID` into a reused buffer | 0 allocs |
 | `GetBinary` into a sized buffer | 0 allocs after warmup |
 | `CreateBinary` / `UpdateBinary` of a fixed `[]byte` | 0 extra besides OS |
@@ -423,7 +425,7 @@ Collapse by **object**, not by layer.
 
 **Import direction:** public `fsentry` → `internal/fs`, `internal/lock`, `internal/name`, `internal/jsonutil`. Internals must not import the public API in a cycle; they may use stdlib plus `x/sys` and `copy`.
 
-**`internal/fs` owns syscalls.** Other packages do not call `os.OpenFile` or `os.Mkdir`. `CreateFile` is `O_EXCL` (empty file, write-only handle). `CreateFolder` is `Mkdir` only (no parents). Both return only: `ErrExist`, `ErrNotExist`, `ErrPermission`, `ErrNotDirectory`, `ErrIsDirectory`, `ErrNoSpace`, `ErrReadOnly`, `ErrInternal`. The OS error is classified then dropped (`wrap` is zero-alloc). Higher code `errors.Is` those sentinels; it does not inspect `syscall.Errno`. `mapOS` is split `error_unix.go` / `error_windows.go`.
+**`internal/fs` owns syscalls.** Other packages do not call `os.OpenFile`, `os.Mkdir`, `os.File.Write`, or `os.Rename`. `CreateFile` is `O_EXCL` (empty file, write-only handle). `Write` writes all bytes to that handle. `CreateFolder` is `Mkdir` only (no parents). `RenameFile` / `RenameFolder` are `os.Rename` (no copy). Helpers return only: `ErrExist`, `ErrNotExist`, `ErrPermission`, `ErrNotDirectory`, `ErrIsDirectory`, `ErrNoSpace`, `ErrReadOnly`, `ErrInternal`. The OS error is classified then dropped (`wrap` is zero-alloc). Higher code `errors.Is` those sentinels; it does not inspect `syscall.Errno`. `mapOS` is split `error_unix.go` / `error_windows.go`.
 
 ---
 

@@ -27,6 +27,7 @@ func TestMapErrorWindows(t *testing.T) {
 		{"write protect", syscall.ERROR_WRITE_PROTECT, ErrReadOnly},
 		{"disk full", syscall.ERROR_DISK_FULL, ErrNoSpace},
 		{"handle disk full", syscall.ERROR_HANDLE_DISK_FULL, ErrNoSpace},
+		{"dir not empty", syscall.ERROR_DIR_NOT_EMPTY, ErrExist},
 		{"unknown", errors.New("cosmic ray"), ErrInternal},
 	}
 	for _, tc := range cases {
