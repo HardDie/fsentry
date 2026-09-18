@@ -387,6 +387,7 @@ This is a **library**, not an application. No `cmd/` until someone asks for a CL
 │   ├── export-import/
 │   ├── validate/
 │   └── notebook/
+├── integration/                # external package; //go:build integration
 ├── wiki/                       # GitHub wiki pages (Home, Getting-Started, …)
 ├── docs/
 │   ├── architecture/
@@ -403,6 +404,7 @@ This is a **library**, not an application. No `cmd/` until someone asks for a CL
 - Do **not** recreate old `internal/service` + `internal/folder/service` + `internal/repository` triples. One implementation per object kind is enough.
 - Tests for public behavior sit next to the public files (`fsentry_test.go`, or `folder_test.go` in package `fsentry_test`). Tests for `NameToID` sit in `internal/name`. Default `New` in tests: `WithNoLockFile()`.
 - `examples/` programs must run (`make examples`). They are documentation, not a dump of DeckBuilder.
+- Full public-API flow: `integration/` package `integration_test` (`make test-integration`).
 - Do not add `pkg/`. Do not add `internal/entity` that duplicates public types.
 
 ### Go package documentation (godoc)
