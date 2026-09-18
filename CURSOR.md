@@ -376,7 +376,17 @@ This is a **library**, not an application. No `cmd/` until someone asks for a CL
 │   ├── name/                   # NameToID into []byte
 │   └── jsonutil/               # marshal envelope, pretty flag, scratch buf
 ├── examples/
-│   └── basic/                  # same story as old README (folder + entry + binary)
+│   ├── README.md
+│   ├── basic/
+│   ├── nested/
+│   ├── typed/
+│   ├── errors/
+│   ├── options/
+│   ├── mutate/
+│   ├── binaries/
+│   ├── export-import/
+│   ├── validate/
+│   └── notebook/
 ├── wiki/                       # GitHub wiki pages (Home, Getting-Started, …)
 ├── docs/
 │   ├── architecture/
@@ -390,7 +400,7 @@ This is a **library**, not an application. No `cmd/` until someone asks for a CL
 - Exported surface lives at module root. `internal/` is OS and helpers only.
 - Do **not** recreate old `internal/service` + `internal/folder/service` + `internal/repository` triples. One implementation per object kind is enough.
 - Tests for public behavior sit next to the public files (`fsentry_test.go`, or `folder_test.go` in package `fsentry_test`). Tests for `NameToID` sit in `internal/name`. Default `New` in tests: `WithNoLockFile()`.
-- `examples/basic` must compile (`go test ./examples/...` or a make target). It is documentation, not a dump of DeckBuilder.
+- `examples/` programs must run (`make examples`). They are documentation, not a dump of DeckBuilder.
 - Do not add `pkg/`. Do not add `internal/entity` that duplicates public types.
 
 ### Go package documentation (godoc)

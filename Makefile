@@ -67,9 +67,11 @@ doc-all:
 docs-site:
 	$(GO) run golang.org/x/pkgsite/cmd/pkgsite@latest -http $(PKGSITE_ADDR)
 
-## examples: Compile example packages if examples/ exists
+## examples: Run all example programs
 examples:
-	@if [ -d examples ]; then $(GO) test ./examples/...; else echo "no examples/ yet"; fi
+	@set -e; for d in examples/*/; do \
+		if [ -f "$$d/main.go" ]; then echo "==> $$d"; $(GO) run "./$$d"; fi; \
+	done
 
 ## ci: What CI should run (unit, integration, vet, fmt)
 ci: test test-integration vet fmt

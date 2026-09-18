@@ -2,7 +2,7 @@
 
 **fsentry** is a Go library that treats a directory tree as a small database. Callers store [folders](Folders), JSON [entries](Entries), and opaque [binaries](Binaries) under one root. There is no SQL, no network server, and no application domain types in this module.
 
-Start with the [README](https://github.com/HardDie/fsentry#readme) for install, then this wiki for worked examples.
+Start with the [README](https://github.com/HardDie/fsentry#readme) for install, then this wiki for worked examples. Runnable programs are in the `examples/` directory of the source repository (`go run ./examples/basic`).
 
 | Page | What you will do |
 |---|---|

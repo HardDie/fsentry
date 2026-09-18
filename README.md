@@ -87,11 +87,14 @@ Display names become portable IDs (`"My Notes"` → `my_notes`). `GetFolder("My 
 
 ## Development
 
+Runnable programs: [`examples/`](examples/). `make examples` runs all of them.
+
 ```bash
 make help
 make test
 make test-integration
 make bench
+make examples
 ```
 
 Architecture notes: [`docs/architecture`](docs/architecture/INDEX.md). Implementation spec for contributors: [`CURSOR.md`](CURSOR.md).
