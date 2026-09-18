@@ -48,3 +48,4 @@ Copy [\_TEMPLATE.md](_TEMPLATE.md) when behavior lands.
 | UC-38 | Remove a binary | `fsentry` | Done | [fsentry/uc-38-remove-binary.md](fsentry/uc-38-remove-binary.md) |
 | UC-39 | Export a zip archive | `fsentry` | Done | [fsentry/uc-39-export.md](fsentry/uc-39-export.md) |
 | UC-40 | Import a zip archive | `fsentry` | Done | [fsentry/uc-40-import.md](fsentry/uc-40-import.md) |
+| UC-41 | Validate a store tree | `fsentry` | Done | [fsentry/uc-41-validate.md](fsentry/uc-41-validate.md) |

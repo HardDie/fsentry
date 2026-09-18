@@ -188,6 +188,7 @@ No global state. Production callers do not pass `WithNoLockFile()`.
 
 (*DB) Export(w io.Writer, path ...string) error
 (*DB) Import(r io.Reader, path ...string) error
+(*DB) Validate(path ...string) ([]Problem, error)
 ```
 
 ```go
@@ -201,6 +202,11 @@ type FolderInfo[T any] struct {
     ID, Name           string
     CreatedAt, UpdatedAt time.Time
     Data               T
+}
+
+type Problem struct {
+    Path string      // relative, `/`
+    Code ProblemCode // info, json, id, name, bad_name, temp, unexpected
 }
 ```
 
@@ -218,6 +224,7 @@ Language: `go 1.27` in `go.mod` (generic methods). CI and local toolchain: lates
 - Move renames on disk (new ID) and updates `id`/`name` inside JSON; bumps `updatedAt` except `UpdateFolderNameWithoutTimestamp`.
 - Update replaces `data` and bumps `updatedAt`; does not rename.
 - `Export` writes a zip of the directory at `path` (empty = root). Zip paths use `/`. Skip `.fsentry.lock`. Non-root export prefixes entries with that folder's ID (DeckBuilder `ArchiveFolder`). `Import` extracts into `path`; existing files are `ErrExist`; zip-slip is `ErrBadArchive`; failed extract rolls back files this call created.
+- `Validate` walks the tree (empty `path` = root) and returns every on-disk defect (`Problem`). It does not repair. Nil slice means the tree matches the contract (IDs, envelopes, no stray files). Walk errors (missing dest, permission) are `err`.
 
 **Errors** (`errors.Is` on package sentinels; OS errors are classified then dropped so `wrap` is zero-alloc):
 
@@ -354,6 +361,7 @@ This is a **library**, not an application. No `cmd/` until someone asks for a CL
 ├── entry.go                    # (*DB) CreateEntry[T], GetEntry[T], …
 ├── binary.go                   # binary methods (GetBinary into buf)
 ├── archive.go                  # Export zip / Import zip
+├── validate.go                 # Validate walk, Problem
 ├── types.go                    # List, Entry[T], FolderInfo[T]
 ├── errors.go                   # sentinels + Wrap
 ├── quoted_string.go            # QuotedString for on-disk name

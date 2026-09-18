@@ -10,5 +10,6 @@
 - [Locking](Locking)
 - [Testing](Testing)
 - [Export and import](Export-and-Import)
+- [Validate](Validate)
 
 [README](https://github.com/HardDie/fsentry#readme) · [pkg.go.dev](https://pkg.go.dev/github.com/HardDie/fsentry)

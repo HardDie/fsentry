@@ -1,6 +1,6 @@
 # Export and import
 
-Backup or copy a store (or one [folder](Folders)) as a zip archive. Zip names always use `/`. The lock file is not included. Related: [on-disk format](On-Disk-Format), [errors](Errors).
+Backup or copy a store (or one [folder](Folders)) as a zip archive. Zip names always use `/`. The lock file is not included. Related: [on-disk format](On-Disk-Format), [errors](Errors), [validate](Validate).
 
 Prerequisites: [Getting started](Getting-Started) (`New` + `Init`).
 
@@ -58,7 +58,7 @@ if err := db.Import(bytes.NewReader(buf.Bytes()), "Inbox"); err != nil {
 // Inbox/my_notes/…
 ```
 
-Existing files are not overwritten (`ErrExist`). Names that would leave the destination (`../secret`) are `ErrBadArchive`. A failed import removes files and directories **this call** created.
+Existing files are not overwritten (`ErrExist`). Names that would leave the destination (`../secret`) are `ErrBadArchive`. A failed import removes files and directories **this call** created. After a successful import, [Validate](Validate) the destination if the zip may have been edited.
 
 If the reader also implements `io.ReaderAt` and `Size() int64` (for example `*bytes.Reader`), the zip is opened without copying the whole archive into a second buffer.
 

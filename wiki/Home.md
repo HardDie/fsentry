@@ -16,6 +16,7 @@ Start with the [README](https://github.com/HardDie/fsentry#readme) for install, 
 | [Locking](Locking) | In-process mutex, `.fsentry.lock`, steal after timeout |
 | [Testing](Testing) | `t.TempDir()`, `WithNoLockFile()`, race tests and benches |
 | [Export and import](Export-and-Import) | Zip backup of a store or folder |
+| [Validate](Validate) | Walk the tree and list corruption |
 
 ## Mental model
 
