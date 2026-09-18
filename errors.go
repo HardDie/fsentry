@@ -16,6 +16,7 @@ var (
 	ErrNotDirectory    = fs.ErrNotDirectory
 	ErrIsDirectory     = fs.ErrIsDirectory
 	ErrFolderCorrupted = errors.New("folder corrupted")
+	ErrBadArchive      = errors.New("bad zip archive")
 	ErrPermission      = fs.ErrPermission
 	ErrNoSpace         = fs.ErrNoSpace
 	ErrReadOnly        = fs.ErrReadOnly

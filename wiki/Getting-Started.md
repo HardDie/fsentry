@@ -134,3 +134,4 @@ Do not call `Drop` on a production data directory unless you intend to wipe it.
 - [Entries](Entries) — duplicate and typed payloads
 - [Binaries](Binaries) — `GetBinary` with a sized buffer
 - [Errors](Errors) — `errors.Is(err, fsentry.ErrExist)`
+- [Export and import](Export-and-Import) — zip backup of a store or folder

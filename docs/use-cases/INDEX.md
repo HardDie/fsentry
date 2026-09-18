@@ -46,3 +46,5 @@ Copy [\_TEMPLATE.md](_TEMPLATE.md) when behavior lands.
 | UC-36 | Move (rename) a binary | `fsentry` | Done | [fsentry/uc-36-move-binary.md](fsentry/uc-36-move-binary.md) |
 | UC-37 | Update a binary | `fsentry` | Done | [fsentry/uc-37-update-binary.md](fsentry/uc-37-update-binary.md) |
 | UC-38 | Remove a binary | `fsentry` | Done | [fsentry/uc-38-remove-binary.md](fsentry/uc-38-remove-binary.md) |
+| UC-39 | Export a zip archive | `fsentry` | Done | [fsentry/uc-39-export.md](fsentry/uc-39-export.md) |
+| UC-40 | Import a zip archive | `fsentry` | Done | [fsentry/uc-40-import.md](fsentry/uc-40-import.md) |

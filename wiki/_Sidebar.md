@@ -9,5 +9,6 @@
 - [Errors](Errors)
 - [Locking](Locking)
 - [Testing](Testing)
+- [Export and import](Export-and-Import)
 
 [README](https://github.com/HardDie/fsentry#readme) · [pkg.go.dev](https://pkg.go.dev/github.com/HardDie/fsentry)

@@ -72,6 +72,7 @@ Guides and copy-paste examples live on the [GitHub wiki](https://github.com/Hard
 | [Errors](https://github.com/HardDie/fsentry/wiki/Errors) | `errors.Is` sentinels |
 | [Locking](https://github.com/HardDie/fsentry/wiki/Locking) | Mutex + lock file, steal after timeout |
 | [Testing](https://github.com/HardDie/fsentry/wiki/Testing) | Temp dirs, race detector, benches |
+| [Export and import](https://github.com/HardDie/fsentry/wiki/Export-and-Import) | Zip backup of a store or folder |
 
 ## Object kinds
 

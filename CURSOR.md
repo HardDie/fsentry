@@ -185,6 +185,9 @@ No global state. Production callers do not pass `WithNoLockFile()`.
 (*DB) MoveBinary(oldName, newName string, path ...string) error
 (*DB) UpdateBinary(name string, data []byte, path ...string) error
 (*DB) RemoveBinary(name string, path ...string) error
+
+(*DB) Export(w io.Writer, path ...string) error
+(*DB) Import(r io.Reader, path ...string) error
 ```
 
 ```go
@@ -214,6 +217,7 @@ Language: `go 1.27` in `go.mod` (generic methods). CI and local toolchain: lates
 - Create returns the envelope so callers do not need a second Get.
 - Move renames on disk (new ID) and updates `id`/`name` inside JSON; bumps `updatedAt` except `UpdateFolderNameWithoutTimestamp`.
 - Update replaces `data` and bumps `updatedAt`; does not rename.
+- `Export` writes a zip of the directory at `path` (empty = root). Zip paths use `/`. Skip `.fsentry.lock`. Non-root export prefixes entries with that folder's ID (DeckBuilder `ArchiveFolder`). `Import` extracts into `path`; existing files are `ErrExist`; zip-slip is `ErrBadArchive`; failed extract rolls back files this call created.
 
 **Errors** (`errors.Is` on package sentinels; OS errors are classified then dropped so `wrap` is zero-alloc):
 
@@ -221,10 +225,11 @@ Language: `go 1.27` in `go.mod` (generic methods). CI and local toolchain: lates
 |---|---|
 | `ErrBadName` | name/id sanitizes to empty or reserved |
 | `ErrBadPath` | parent missing, not a directory, or path escapes root |
-| `ErrExist` | create/move target already exists |
+| `ErrExist` | create/move/import target already exists |
 | `ErrNotExist` | get/update/remove/move source missing |
 | `ErrNotFile` / `ErrNotDirectory` | wrong object kind at that path |
 | `ErrFolderCorrupted` | folder dir exists, `.info.json` unreadable |
+| `ErrBadArchive` | zip is invalid, or an entry would extract outside the destination |
 | `ErrPermission` | OS permission denied |
 | `ErrLock` | lock file open/flock failed |
 | `ErrBusy` | `TryLock` while another handle holds the lock (internal; steal path) |
@@ -348,6 +353,7 @@ This is a **library**, not an application. No `cmd/` until someone asks for a CL
 ├── folder.go                   # folder methods
 ├── entry.go                    # (*DB) CreateEntry[T], GetEntry[T], …
 ├── binary.go                   # binary methods (GetBinary into buf)
+├── archive.go                  # Export zip / Import zip
 ├── types.go                    # List, Entry[T], FolderInfo[T]
 ├── errors.go                   # sentinels + Wrap
 ├── quoted_string.go            # QuotedString for on-disk name

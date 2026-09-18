@@ -12,4 +12,4 @@ ADRs live in this folder. Number them in order (`001`, `002`, …). Status is on
 | [006](006-internal-fs-file-layout.md) | `internal/fs` files follow package `os` | Accepted |
 | [007](007-advisory-lock-and-steal.md) | Advisory lock file, stamp, steal after timeout | Accepted |
 | [008](008-exported-benchmarks-zero-wrap.md) | Benches on exported helpers; `wrap` returns the sentinel only | Accepted |
-| [009](009-tests-tempdir-no-lock.md) | Race tests, `t.TempDir()`, lock off unless testing the lock | Accepted |
+| [010](010-zip-export-import.md) | Zip export and import of a store tree | Accepted |
