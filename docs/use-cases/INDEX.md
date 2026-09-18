@@ -52,3 +52,4 @@ Copy [\_TEMPLATE.md](_TEMPLATE.md) when behavior lands.
 | UC-42 | Full public-API integration flow | `integration` | Done | [fsentry/uc-42-full-flow-integration.md](fsentry/uc-42-full-flow-integration.md) |
 | UC-43 | Require valid folders on a nested path | `fsentry` | Done | [fsentry/uc-43-ensure-path-folders.md](fsentry/uc-43-ensure-path-folders.md) |
 | UC-44 | Duplicate a folder | `fsentry` | Done | [fsentry/uc-44-duplicate-folder.md](fsentry/uc-44-duplicate-folder.md) |
+| UC-46 | Rename a folder without bumping updatedAt | `fsentry` | Done | [fsentry/uc-46-update-folder-name-without-timestamp.md](fsentry/uc-46-update-folder-name-without-timestamp.md) |

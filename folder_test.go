@@ -233,6 +233,57 @@ func TestMoveFolder(t *testing.T) {
 	}
 }
 
+func TestUpdateFolderNameWithoutTimestamp(t *testing.T) {
+	db := openDB(t)
+	_, err := db.UpdateFolderNameWithoutTimestamp[any]("missing", "new")
+	if !errors.Is(err, fsentry.ErrNotExist) {
+		t.Fatalf("%v", err)
+	}
+	_, err = db.UpdateFolderNameWithoutTimestamp[any]("a", "b", "missing")
+	if !errors.Is(err, fsentry.ErrBadPath) {
+		t.Fatalf("%v", err)
+	}
+	src, err := db.CreateFolder("first_folder", map[string]int{"n": 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.CreateFolder[any]("second_folder", nil); err != nil {
+		t.Fatal(err)
+	}
+	_, err = db.UpdateFolderNameWithoutTimestamp[any]("", "x")
+	if !errors.Is(err, fsentry.ErrBadName) {
+		t.Fatalf("%v", err)
+	}
+	_, err = db.UpdateFolderNameWithoutTimestamp[any]("first_folder", "")
+	if !errors.Is(err, fsentry.ErrBadName) {
+		t.Fatalf("%v", err)
+	}
+	_, err = db.UpdateFolderNameWithoutTimestamp[any]("first_folder", "second_folder")
+	if !errors.Is(err, fsentry.ErrExist) {
+		t.Fatalf("%v", err)
+	}
+	moved, err := db.UpdateFolderNameWithoutTimestamp[map[string]int]("first_folder", "new_first_folder")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if moved.ID != "new_first_folder" || moved.Name != "new_first_folder" || moved.Data["n"] != 1 {
+		t.Fatalf("%+v", moved)
+	}
+	if !moved.CreatedAt.Equal(src.CreatedAt) || !moved.UpdatedAt.Equal(src.UpdatedAt) {
+		t.Fatalf("timestamps changed: src %+v dst %+v", src, moved)
+	}
+	if _, err := db.GetFolder[any]("first_folder"); !errors.Is(err, fsentry.ErrNotExist) {
+		t.Fatalf("%v", err)
+	}
+	got, err := db.GetFolder[map[string]int]("new_first_folder")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.UpdatedAt.Equal(src.UpdatedAt) || got.Data["n"] != 1 {
+		t.Fatalf("%+v", got)
+	}
+}
+
 func TestUpdateFolder(t *testing.T) {
 	db := openDB(t)
 	_, err := db.UpdateFolder[any]("", nil)

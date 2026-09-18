@@ -66,7 +66,7 @@ Guides and copy-paste examples live on the [GitHub wiki](https://github.com/Hard
 |---|---|
 | [Home](https://github.com/HardDie/fsentry/wiki) | Map of the wiki |
 | [Getting started](https://github.com/HardDie/fsentry/wiki/Getting-Started) | Install, `New` / `Init` / `Drop`, first store |
-| [Folders](https://github.com/HardDie/fsentry/wiki/Folders) | Create, get, list, update, move, duplicate, remove |
+| [Folders](https://github.com/HardDie/fsentry/wiki/Folders) | Create, get, list, update, move, duplicate, rename without timestamp, remove |
 | [Entries](https://github.com/HardDie/fsentry/wiki/Entries) | JSON documents and `DuplicateEntry` |
 | [Binaries](https://github.com/HardDie/fsentry/wiki/Binaries) | `.bin` files and `GetBinary` buffers |
 | [Paths and IDs](https://github.com/HardDie/fsentry/wiki/Paths-and-IDs) | `NameToID`, parent `path` chains |

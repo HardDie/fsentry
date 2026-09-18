@@ -197,6 +197,21 @@ func TestFullPublicFlow(t *testing.T) {
 	}
 	mustValidate(t, db)
 
+	renamedCopy, err := db.UpdateFolderNameWithoutTimestamp[tag]("Keep Copy", "Keep Snapshot")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if renamedCopy.ID != "keep_snapshot" {
+		t.Fatalf("%+v", renamedCopy)
+	}
+	if !renamedCopy.CreatedAt.Equal(folderDup.CreatedAt) || !renamedCopy.UpdatedAt.Equal(folderDup.UpdatedAt) {
+		t.Fatalf("timestamps bumped: %+v vs %+v", folderDup, renamedCopy)
+	}
+	if _, err := db.GetFolder[tag]("Keep Copy"); !errors.Is(err, fsentry.ErrNotExist) {
+		t.Fatal(err)
+	}
+	mustValidate(t, db)
+
 	beforeFiles := fileTree(t, root)
 	beforeAPI := collectAPI(t, db)
 
@@ -290,7 +305,7 @@ func TestFullPublicFlow(t *testing.T) {
 		t.Fatalf("handbook after junk delete: %v %+v", err, handbook)
 	}
 	mustValidate(t, db)
-	assertList(t, db, nil, []string{"games", "keep_copy", "keep_forever"}, []string{"settings"}, nil)
+	assertList(t, db, nil, []string{"games", "keep_forever", "keep_snapshot"}, []string{"settings"}, nil)
 
 	if err := db.Drop(); err != nil {
 		t.Fatal(err)

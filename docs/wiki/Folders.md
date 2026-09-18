@@ -69,6 +69,14 @@ moved, err := db.MoveFolder[Game]("My Game", "Other Game")
 
 Target ID already present: [`ErrExist`](Errors).
 
+## Rename without bumping time
+
+`UpdateFolderNameWithoutTimestamp` is the same rename as `MoveFolder` but **keeps** `createdAt` and `updatedAt`. DeckBuilder uses this on import/rename so a restored tree does not look freshly edited.
+
+```go
+renamed, err := db.UpdateFolderNameWithoutTimestamp[Game]("My Game", "Imported Game")
+```
+
 ## Duplicate
 
 Deep-copies the directory. Nested folders, entries, and binaries keep their ids and timestamps. The new folder’s `.info.json` gets a new id/name and **fresh** `createdAt` / `updatedAt`.
@@ -90,7 +98,7 @@ err := db.RemoveFolder("Other Game")
 
 ## Payload types
 
-Use a struct (or `map`, `json.RawMessage`, …). Inference works on create/update from the value. Get, move, and duplicate take `[T]` so JSON unmarshals into the right type.
+Use a struct (or `map`, `json.RawMessage`, …). Inference works on create/update from the value. Get, move, duplicate, and `UpdateFolderNameWithoutTimestamp` take `[T]` so JSON unmarshals into the right type.
 
 ```go
 raw, err := db.GetFolder[json.RawMessage]("my_game")

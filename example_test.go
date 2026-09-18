@@ -307,6 +307,22 @@ func ExampleDB_MoveFolder() {
 	// archive Archive
 }
 
+func ExampleDB_UpdateFolderNameWithoutTimestamp() {
+	db, _, cleanup := exampleDB()
+	defer cleanup()
+
+	if _, err := db.CreateFolder("My Notes", meta{Kind: "notebook"}); err != nil {
+		panic(err)
+	}
+	renamed, err := db.UpdateFolderNameWithoutTimestamp[meta]("My Notes", "Archive")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(renamed.ID, renamed.Name, renamed.Data.Kind)
+	// Output:
+	// archive Archive notebook
+}
+
 func ExampleDB_UpdateFolder() {
 	db, _, cleanup := exampleDB()
 	defer cleanup()

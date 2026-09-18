@@ -1,4 +1,4 @@
-// Update, move, duplicate, and remove folders and entries.
+// Update, move, duplicate, rename without timestamp, and remove folders and entries.
 package main
 
 import (
@@ -51,6 +51,12 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println("duplicate folder", copy.ID)
+
+	snapshot, err := db.UpdateFolderNameWithoutTimestamp[meta]("Archive Copy", "Snapshot")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("renamed without timestamp", snapshot.ID)
 
 	if _, err := db.CreateEntry("note", body{Text: "v1"}, "archive"); err != nil {
 		log.Fatal(err)

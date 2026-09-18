@@ -86,49 +86,67 @@ func (db *DB) GetFolder[T any](name string, path ...string) (FolderInfo[T], erro
 func (db *DB) MoveFolder[T any](oldName, newName string, path ...string) (FolderInfo[T], error) {
 	var out FolderInfo[T]
 	err := db.withLock(true, func() error {
-		parent, err := db.ensurePath(path...)
-		if err != nil {
-			return err
-		}
-		oldID, err := db.objectID(oldName)
-		if err != nil {
-			return err
-		}
-		newID, err := db.objectID(newName)
-		if err != nil {
-			return err
-		}
-		oldDir := filepath.Join(parent, oldID)
-		newDir := filepath.Join(parent, newID)
-		if err := db.statDir(oldDir, false); err != nil {
-			return err
-		}
-		switch err := db.statDir(newDir, false); {
-		case err == nil:
-			return ErrExist
-		case errors.Is(err, ErrNotExist):
-		default:
-			return err
-		}
-		disk, err := db.readValidInfo(oldDir, oldID)
-		if err != nil {
-			return err
-		}
-		if err := fs.RenameFolder(oldDir, newDir); err != nil {
-			return err
-		}
-		now := db.clock()
-		disk.ID = newID
-		disk.Name = QuotedString(newName)
-		disk.UpdatedAt = now
-		if err := db.writeInfoReplace(newDir, disk); err != nil {
-			_ = fs.RenameFolder(newDir, oldDir)
-			return err
-		}
-		out, err = decodeFolder[T](disk)
+		var err error
+		out, err = db.renameFolder[T](oldName, newName, true, path...)
 		return err
 	})
 	return out, err
+}
+
+// UpdateFolderNameWithoutTimestamp renames a folder like MoveFolder but leaves
+// createdAt and updatedAt unchanged (DeckBuilder import/rename).
+func (db *DB) UpdateFolderNameWithoutTimestamp[T any](oldName, newName string, path ...string) (FolderInfo[T], error) {
+	var out FolderInfo[T]
+	err := db.withLock(true, func() error {
+		var err error
+		out, err = db.renameFolder[T](oldName, newName, false, path...)
+		return err
+	})
+	return out, err
+}
+
+func (db *DB) renameFolder[T any](oldName, newName string, bumpUpdated bool, path ...string) (FolderInfo[T], error) {
+	parent, err := db.ensurePath(path...)
+	if err != nil {
+		return FolderInfo[T]{}, err
+	}
+	oldID, err := db.objectID(oldName)
+	if err != nil {
+		return FolderInfo[T]{}, err
+	}
+	newID, err := db.objectID(newName)
+	if err != nil {
+		return FolderInfo[T]{}, err
+	}
+	oldDir := filepath.Join(parent, oldID)
+	newDir := filepath.Join(parent, newID)
+	if err := db.statDir(oldDir, false); err != nil {
+		return FolderInfo[T]{}, err
+	}
+	switch err := db.statDir(newDir, false); {
+	case err == nil:
+		return FolderInfo[T]{}, ErrExist
+	case errors.Is(err, ErrNotExist):
+	default:
+		return FolderInfo[T]{}, err
+	}
+	disk, err := db.readValidInfo(oldDir, oldID)
+	if err != nil {
+		return FolderInfo[T]{}, err
+	}
+	if err := fs.RenameFolder(oldDir, newDir); err != nil {
+		return FolderInfo[T]{}, err
+	}
+	disk.ID = newID
+	disk.Name = QuotedString(newName)
+	if bumpUpdated {
+		disk.UpdatedAt = db.clock()
+	}
+	if err := db.writeInfoReplace(newDir, disk); err != nil {
+		_ = fs.RenameFolder(newDir, oldDir)
+		return FolderInfo[T]{}, err
+	}
+	return decodeFolder[T](disk)
 }
 
 // UpdateFolder replaces the folder payload and bumps updatedAt.

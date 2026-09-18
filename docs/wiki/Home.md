@@ -7,7 +7,7 @@ Start with the [README](https://github.com/HardDie/fsentry#readme) for install, 
 | Page | What you will do |
 |---|---|
 | [Getting started](Getting-Started) | Install, open a store with `New` + `Init`, create a folder, entry, and binary, then `Drop` |
-| [Folders](Folders) | Create / get / list / update / move / duplicate / remove folders and nested payloads |
+| [Folders](Folders) | Create / get / list / update / move / duplicate / rename without timestamp / remove folders and nested payloads |
 | [Entries](Entries) | Typed JSON documents, duplicate, update, move |
 | [Binaries](Binaries) | Raw `.bin` files and reading into a caller buffer |
 | [Paths and IDs](Paths-and-IDs) | `NameToID`, parent path chains, what is a bad name |

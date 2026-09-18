@@ -22,4 +22,4 @@
 
 ## Postconditions
 
-* Old ID is gone. `createdAt` is preserved.
+* Old ID is gone. `createdAt` is preserved. For a rename that also keeps `updatedAt`, see [UC-46](uc-46-update-folder-name-without-timestamp.md).
