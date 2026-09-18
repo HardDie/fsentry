@@ -33,3 +33,4 @@ Start at the top. Later folders assume you already know `New` + `Init`.
 - Production code omits `WithNoLockFile()`. These programs pass it so they stay easy to run next to tests.
 - Display names become IDs (`"My Notes"` → `my_notes`). Get/move accept either form.
 - Godoc also has `Example*` tests in the library package (`go test -run Example`).
+- The library is [GPL-3.0](../LICENSE).

@@ -1,6 +1,7 @@
 # fsentry
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/HardDie/fsentry.svg)](https://pkg.go.dev/github.com/HardDie/fsentry)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 A Go library that treats a **directory tree as a small database**.
 
@@ -101,4 +102,4 @@ Architecture notes: [`docs/architecture`](docs/architecture/INDEX.md). Implement
 
 ## License
 
-See the repository license file when present. Module path: [`github.com/HardDie/fsentry`](https://github.com/HardDie/fsentry).
+[GNU General Public License v3.0](LICENSE). Module path: [`github.com/HardDie/fsentry`](https://github.com/HardDie/fsentry).

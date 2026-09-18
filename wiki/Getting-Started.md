@@ -10,7 +10,7 @@ Requires **Go 1.27 or newer**.
 go get github.com/HardDie/fsentry
 ```
 
-Module path: `github.com/HardDie/fsentry`.
+Module path: `github.com/HardDie/fsentry`. Licensed under [GPL-3.0](https://github.com/HardDie/fsentry/blob/master/LICENSE).
 
 ## Open a store
 

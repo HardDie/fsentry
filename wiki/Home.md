@@ -54,3 +54,7 @@ git push
 ```
 
 GitHub wiki links in these files are **page slugs without `.md`**, for example `[Folders](Folders)` → `https://github.com/HardDie/fsentry/wiki/Folders`.
+
+## License
+
+The library is [GNU GPL v3](https://github.com/HardDie/fsentry/blob/master/LICENSE).

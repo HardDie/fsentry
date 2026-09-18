@@ -354,7 +354,7 @@ This is a **library**, not an application. No `cmd/` until someone asks for a CL
 ├── Makefile
 ├── README.md
 ├── CURSOR.md
-├── LICENSE
+├── LICENSE                     # GNU GPL v3
 ├── go.mod                      # module github.com/HardDie/fsentry; go 1.27
 ├── example_test.go             # godoc Example* (run by go test)
 ├── fsentry.go                  # New, options, *DB, Init/Drop/List

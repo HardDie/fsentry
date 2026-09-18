@@ -12,4 +12,4 @@
 - [Export and import](Export-and-Import)
 - [Validate](Validate)
 
-[README](https://github.com/HardDie/fsentry#readme) · [pkg.go.dev](https://pkg.go.dev/github.com/HardDie/fsentry)
+[README](https://github.com/HardDie/fsentry#readme) · [pkg.go.dev](https://pkg.go.dev/github.com/HardDie/fsentry) · [License (GPL-3.0)](https://github.com/HardDie/fsentry/blob/master/LICENSE)
