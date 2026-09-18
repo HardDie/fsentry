@@ -22,7 +22,7 @@ Start at the top. Later folders assume you already know `New` + `Init`.
 | [typed](typed/) | Struct payloads, `GetFolder[T]` / `GetEntry[T]`, `json.RawMessage`, untyped `nil` |
 | [errors](errors/) | `errors.Is` with `ErrBadName`, `ErrExist`, `ErrNotExist`, `ErrBadPath` |
 | [options](options/) | `WithPretty`, `WithNoLockFile` vs `WithLockFile`, `WithLockTimeout` |
-| [mutate](mutate/) | Update, move, `DuplicateEntry`, remove |
+| [mutate](mutate/) | Update, move, `DuplicateFolder` / `DuplicateEntry`, remove |
 | [binaries](binaries/) | `.bin` create / get (sized buffer) / update / move / remove |
 | [export-import](export-import/) | Zip the store or one folder, import into another root |
 | [validate](validate/) | `Validate` on a healthy tree, then after a broken folder |

@@ -20,3 +20,22 @@ func BenchmarkCreateFolder(b *testing.B) {
 		i++
 	}
 }
+
+func BenchmarkDuplicateFolder(b *testing.B) {
+	db := New(b.TempDir(), WithNoLockFile())
+	if err := db.Init(); err != nil {
+		b.Fatal(err)
+	}
+	if _, err := db.CreateFolder[any]("src", nil); err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	i := 0
+	for b.Loop() {
+		if _, err := db.DuplicateFolder[any]("src", strconv.Itoa(i)); err != nil {
+			b.Fatal(err)
+		}
+		i++
+	}
+}

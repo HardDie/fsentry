@@ -46,6 +46,12 @@ func main() {
 	}
 	fmt.Println("moved folder", moved.ID)
 
+	copy, err := db.DuplicateFolder[meta]("Archive", "Archive Copy")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("duplicate folder", copy.ID)
+
 	if _, err := db.CreateEntry("note", body{Text: "v1"}, "archive"); err != nil {
 		log.Fatal(err)
 	}

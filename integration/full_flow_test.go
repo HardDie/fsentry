@@ -185,6 +185,18 @@ func TestFullPublicFlow(t *testing.T) {
 	assertEntry(t, dup, gotDup)
 	mustValidate(t, db)
 
+	folderDup, err := db.DuplicateFolder[tag]("Keep Forever", "Keep Copy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if folderDup.ID != "keep_copy" || folderDup.Data.Tag != "keep" {
+		t.Fatalf("%+v", folderDup)
+	}
+	if _, err := db.GetFolder[tag]("Keep Forever"); err != nil {
+		t.Fatal(err)
+	}
+	mustValidate(t, db)
+
 	beforeFiles := fileTree(t, root)
 	beforeAPI := collectAPI(t, db)
 
@@ -278,7 +290,7 @@ func TestFullPublicFlow(t *testing.T) {
 		t.Fatalf("handbook after junk delete: %v %+v", err, handbook)
 	}
 	mustValidate(t, db)
-	assertList(t, db, nil, []string{"games", "keep_forever"}, []string{"settings"}, nil)
+	assertList(t, db, nil, []string{"games", "keep_copy", "keep_forever"}, []string{"settings"}, nil)
 
 	if err := db.Drop(); err != nil {
 		t.Fatal(err)

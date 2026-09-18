@@ -259,6 +259,81 @@ func TestUpdateFolder(t *testing.T) {
 	}
 }
 
+func TestDuplicateFolder(t *testing.T) {
+	db := openDB(t)
+	_, err := db.DuplicateFolder[any]("missing", "copy")
+	if !errors.Is(err, fsentry.ErrNotExist) {
+		t.Fatalf("%v", err)
+	}
+	_, err = db.DuplicateFolder[any]("a", "b", "missing")
+	if !errors.Is(err, fsentry.ErrBadPath) {
+		t.Fatalf("%v", err)
+	}
+	src, err := db.CreateFolder("orig", map[string]int{"n": 3})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.CreateFolder[any]("child", nil, "orig"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.CreateEntry("note", map[string]string{"t": "hi"}, "orig"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.CreateBinary("pic", []byte("PNG"), "orig"); err != nil {
+		t.Fatal(err)
+	}
+
+	dup, err := db.DuplicateFolder[map[string]int]("orig", "copy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dup.ID != "copy" || dup.Name != "copy" || dup.Data["n"] != 3 {
+		t.Fatalf("%+v", dup)
+	}
+
+	still, err := db.GetFolder[map[string]int]("orig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if still.Data["n"] != 3 || still.ID != src.ID {
+		t.Fatal("source changed")
+	}
+	note, err := db.GetEntry[map[string]string]("note", "copy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if note.Data["t"] != "hi" {
+		t.Fatalf("%+v", note)
+	}
+	pic, err := db.GetBinary("pic", nil, "copy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(pic) != "PNG" {
+		t.Fatalf("%q", pic)
+	}
+	child, err := db.GetFolder[any]("child", "copy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if child.ID != "child" {
+		t.Fatal(child.ID)
+	}
+
+	_, err = db.DuplicateFolder[any]("orig", "copy")
+	if !errors.Is(err, fsentry.ErrExist) {
+		t.Fatalf("dup exist: %v", err)
+	}
+	_, err = db.DuplicateFolder[any]("", "x")
+	if !errors.Is(err, fsentry.ErrBadName) {
+		t.Fatalf("%v", err)
+	}
+	_, err = db.DuplicateFolder[any]("orig", "")
+	if !errors.Is(err, fsentry.ErrBadName) {
+		t.Fatalf("%v", err)
+	}
+}
+
 func TestRemoveFolder(t *testing.T) {
 	db := openDB(t)
 	if err := db.RemoveFolder(""); !errors.Is(err, fsentry.ErrBadName) {

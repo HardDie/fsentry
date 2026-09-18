@@ -323,6 +323,22 @@ func ExampleDB_UpdateFolder() {
 	// new
 }
 
+func ExampleDB_DuplicateFolder() {
+	db, _, cleanup := exampleDB()
+	defer cleanup()
+
+	if _, err := db.CreateFolder("My Notes", meta{Kind: "notebook"}); err != nil {
+		panic(err)
+	}
+	copy, err := db.DuplicateFolder[meta]("My Notes", "Backup")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(copy.ID, copy.Data.Kind)
+	// Output:
+	// backup notebook
+}
+
 func ExampleDB_RemoveFolder() {
 	db, _, cleanup := exampleDB()
 	defer cleanup()

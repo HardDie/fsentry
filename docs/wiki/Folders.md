@@ -69,6 +69,17 @@ moved, err := db.MoveFolder[Game]("My Game", "Other Game")
 
 Target ID already present: [`ErrExist`](Errors).
 
+## Duplicate
+
+Deep-copies the directory. Nested folders, entries, and binaries keep their ids and timestamps. The new folder’s `.info.json` gets a new id/name and **fresh** `createdAt` / `updatedAt`.
+
+```go
+copy, err := db.DuplicateFolder[Game]("My Game", "My Game Copy")
+// directory my_game_copy/
+```
+
+Create of the destination uses `O_EXCL`; an existing ID is [`ErrExist`](Errors). Source is unchanged.
+
 ## Remove
 
 `RemoveFolder` deletes the directory recursively. It refuses a folder whose `.info.json` cannot be read (`ErrFolderCorrupted`) so a half-written tree is not silently wiped.
@@ -79,7 +90,7 @@ err := db.RemoveFolder("Other Game")
 
 ## Payload types
 
-Use a struct (or `map`, `json.RawMessage`, …). Inference works on create/update from the value. Get and move take `[T]` so JSON unmarshals into the right type.
+Use a struct (or `map`, `json.RawMessage`, …). Inference works on create/update from the value. Get, move, and duplicate take `[T]` so JSON unmarshals into the right type.
 
 ```go
 raw, err := db.GetFolder[json.RawMessage]("my_game")
