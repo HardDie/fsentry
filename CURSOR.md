@@ -391,8 +391,10 @@ This is a **library**, not an application. No `cmd/` until someone asks for a CL
 ├── docs/
 │   ├── architecture/
 │   └── use-cases/              # UC files only after the code exists
-└── .github/workflows/
-    └── test.yml
+└── .github/
+    ├── dependabot.yml
+    └── workflows/
+        └── test.yml
 ```
 
 **Layout rules**
@@ -447,7 +449,7 @@ Every package **must** have unit tests. Integration tests when talking to the re
 - Integration tests skip nothing on CI: they only need a temp directory.
 - Porting is incomplete without tests, godoc, benchmarks for the hot paths, and a use-case file for that behavior.
 
-CI (every push and PR): Go **1.27.x**, `go test -race ./...` then `go test -tags=integration ./...`.
+CI (every push and PR): GitHub Actions [`.github/workflows/test.yml`](.github/workflows/test.yml). Go **1.27.x** from `go.mod`. Linux and macOS: `go test -race ./...` then `go test -tags=integration ./...`. Windows: the same without `-race` (race needs CGO). Ubuntu also runs `gofmt`, `go vet`, `go mod tidy`, `make examples`, and golangci-lint.
 
 ### Internal packages
 

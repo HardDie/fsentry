@@ -1,5 +1,6 @@
 # fsentry
 
+[![CI](https://github.com/HardDie/fsentry/actions/workflows/test.yml/badge.svg)](https://github.com/HardDie/fsentry/actions/workflows/test.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/HardDie/fsentry.svg)](https://pkg.go.dev/github.com/HardDie/fsentry)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
@@ -96,7 +97,10 @@ make test
 make test-integration
 make bench
 make examples
+make ci
 ```
+
+GitHub Actions (`.github/workflows/test.yml`) runs that check on every push and pull request: unit tests with race on Linux and macOS, unit tests without race on Windows, then `go test -tags=integration`, plus `gofmt`, `go vet`, `go mod tidy`, examples, and golangci-lint.
 
 Architecture notes: [`docs/architecture`](docs/architecture/INDEX.md). Implementation spec for contributors: [`CURSOR.md`](CURSOR.md).
 

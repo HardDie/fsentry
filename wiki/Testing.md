@@ -47,7 +47,7 @@ make bench                # benchmarks only; Makefile keeps -run '^$'
 make ci
 ```
 
-Integration files use `//go:build integration`. CI is expected to run race tests, then the integration tag.
+Integration files use `//go:build integration`. GitHub Actions (`.github/workflows/test.yml`) runs race tests on Linux and macOS, tests without race on Windows, then the integration tag, plus fmt/vet/tidy/examples/lint.
 
 ## Benchmarks
 
