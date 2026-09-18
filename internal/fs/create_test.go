@@ -156,6 +156,20 @@ func TestCreateFolder(t *testing.T) {
 	})
 }
 
+func TestCreateFolderAll(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "a", "b", "c")
+	if err := CreateFolderAll(path); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(path)
+	if err != nil || !info.IsDir() {
+		t.Fatalf("%v", err)
+	}
+	if err := CreateFolderAll(path); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestCreateFileDoesNotWrite(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "empty.bin")
 	file, err := CreateFile(path)

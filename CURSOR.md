@@ -156,7 +156,7 @@ got, err := db.GetEntry[Settings]("settings")
 
 No global state. Production callers do not pass `WithNoLockFile()`.
 
-**Concrete type `*DB`.** Go **1.27** allows type parameters on methods. Entry operations are **methods on `*DB`**, not package-level functions. Do not keep a parallel `data any` entry API.
+**Concrete type `*DB`.** Go **1.27** allows type parameters on methods. Entry and folder payload operations are **methods on `*DB`**, not package-level functions. Do not keep a parallel `data any` API.
 
 **No interface for generic methods.** Go 1.27 still forbids type parameters on interface methods, and a generic method cannot satisfy an interface. Do not export `IFSEntry` (or any interface) that pretends to include `CreateEntry[T]`. Callers take `*DB`. Mock with a real temp-dir store in tests.
 
@@ -165,13 +165,13 @@ No global state. Production callers do not pass `WithNoLockFile()`.
 (*DB) Drop() error
 (*DB) List(path ...string) (List, error)
 
-(*DB) CreateFolder(name string, data any, path ...string) (FolderInfo, error)
-(*DB) GetFolder(name string, path ...string) (FolderInfo, error)
-(*DB) MoveFolder(oldName, newName string, path ...string) (FolderInfo, error)
-(*DB) UpdateFolder(name string, data any, path ...string) (FolderInfo, error)
+(*DB) CreateFolder[T any](name string, data T, path ...string) (FolderInfo[T], error)
+(*DB) GetFolder[T any](name string, path ...string) (FolderInfo[T], error)
+(*DB) MoveFolder[T any](oldName, newName string, path ...string) (FolderInfo[T], error)
+(*DB) UpdateFolder[T any](name string, data T, path ...string) (FolderInfo[T], error)
 (*DB) RemoveFolder(name string, path ...string) error
-(*DB) DuplicateFolder(srcName, dstName string, path ...string) (FolderInfo, error)
-(*DB) UpdateFolderNameWithoutTimestamp(oldName, newName string, path ...string) (FolderInfo, error)
+(*DB) DuplicateFolder[T any](srcName, dstName string, path ...string) (FolderInfo[T], error)
+(*DB) UpdateFolderNameWithoutTimestamp[T any](oldName, newName string, path ...string) (FolderInfo[T], error)
 
 (*DB) CreateEntry[T any](name string, data T, path ...string) (Entry[T], error)
 (*DB) GetEntry[T any](name string, path ...string) (Entry[T], error)
@@ -193,13 +193,19 @@ type Entry[T any] struct {
     CreatedAt, UpdatedAt time.Time
     Data               T
 }
+
+type FolderInfo[T any] struct {
+    ID, Name           string
+    CreatedAt, UpdatedAt time.Time
+    Data               T
+}
 ```
 
-Inference: `db.CreateEntry("e", myStruct)` does not need `[T]`. `GetEntry` usually needs `[T]`: `db.GetEntry[Settings]("settings")`. Escape hatch: `db.GetEntry[json.RawMessage]("settings")`. Folder `data` stays `any` for now (DeckBuilder still `json.Unmarshal`s folder payloads); do not genericize folders unless asked.
+Inference: `db.CreateFolder("g", myStruct)` and `db.CreateEntry("e", myStruct)` do not need `[T]`. `GetFolder` / `GetEntry` usually need `[T]`: `db.GetFolder[Game]("my_game")`. Escape hatch: `json.RawMessage`. Untyped `nil` payload requires `CreateFolder[any]("x", nil)` (JSON `null`).
 
 Language: `go 1.27` in `go.mod` (generic methods). CI and local toolchain: latest **1.27.x** patch (currently 1.27.1). Do not set `go 1.22` and wait for a newer compiler.
 
-**Return values.** Return structs **by value** (`Entry[T]`, `FolderInfo`, `List`), not pointers, unless an API must distinguish missing from zero (errors do that). `GetBinary` reads into caller `buf` and returns that slice (or a grown one); passing a sized buffer is the zero-alloc path. `buf == nil` is allowed and allocates.
+**Return values.** Return structs **by value** (`Entry[T]`, `FolderInfo[T]`, `List`), not pointers, unless an API must distinguish missing from zero (errors do that). `GetBinary` reads into caller `buf` and returns that slice (or a grown one); passing a sized buffer is the zero-alloc path. `buf == nil` is allowed and allocates.
 
 **Semantics**
 
@@ -247,7 +253,7 @@ Goal: **zero allocations** on paths we control. `encoding/json` will still alloc
 - `NameToID(dst []byte, name string) []byte` appends into `dst`; public helper may wrap it. Measure with `testing.AllocsPerRun` and keep the append-to-buffer path at **0 allocs**.
 - Join paths without `filepath.Join` on the hot path if that allocates; write into the scratch buffer, still using OS separators and `Clean` rules (no `..` escape).
 - `GetBinary(name, buf)`: `Read` into `buf`, grow with `append` only when short.
-- Return `List` / `Entry[T]` / `FolderInfo` by value. Do not `new` them.
+- Return `List` / `Entry[T]` / `FolderInfo[T]` by value. Do not `new` them.
 - Success path: no `fmt.Errorf`, no `string(+)` in a loop, no `[]byte(str)` / `string(bytes)` if the bytes are only for I/O.
 
 **Do not**
@@ -341,7 +347,7 @@ This is a **library**, not an application. No `cmd/` until someone asks for a CL
 ├── folder.go                   # folder methods
 ├── entry.go                    # (*DB) CreateEntry[T], GetEntry[T], …
 ├── binary.go                   # binary methods (GetBinary into buf)
-├── types.go                    # List, Entry[T], FolderInfo
+├── types.go                    # List, Entry[T], FolderInfo[T]
 ├── errors.go                   # sentinels + Wrap
 ├── quoted_string.go            # QuotedString for on-disk name
 ├── doc.go                      # package comment
@@ -440,6 +446,7 @@ Collapse by **object**, not by layer.
 | `WriteAt` / `ReadAt` / `Truncate` | offset I/O; short `ReadAt` is success |
 | `Close` / `Sync` | handle close / fsync |
 | `CreateFolder` | `Mkdir` only (no parents) |
+| `CreateFolderAll` | `MkdirAll` (Init) |
 | `RenameFile` / `RenameFolder` | `os.Rename` (no copy) |
 | `RemoveFile` | `unlink` only (not rmdir) |
 | `RemoveFolder` | `Stat` then recursive `RemoveAll`; missing is `ErrNotExist` |
@@ -458,7 +465,7 @@ Helpers return only: `ErrExist`, `ErrNotExist`, `ErrPermission`, `ErrNotDirector
 - **IDs are filesystem names; names are display strings.** Never put unsanitized user text in a path.
 - **`.info.json` is not an entry.** List must not return it as `Entries`. Same for `.fsentry.lock`.
 - **Cards in DeckBuilder are not entries.** They are a map inside the `cards` folder payload plus per-id binaries. This library still has no card type.
-- **Entries are `Entry[T]` on `*DB` methods (Go 1.27).** No `data any` on the entry API. No `IFSEntry` interface: generic methods cannot be interface methods.
+- **Entries and folders are `Entry[T]` / `FolderInfo[T]` on `*DB` methods (Go 1.27).** No `data any` on those APIs. No `IFSEntry` interface: generic methods cannot be interface methods.
 - **Finish `List`.** Returning `nil, nil` (old rewrite) is a bug.
 - **Timestamps are UTC `time.Time` in the public struct.** Pointers were a leftover; do not export them.
 - **Pretty JSON is optional** and must not change semantics.

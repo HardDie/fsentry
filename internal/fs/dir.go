@@ -14,6 +14,15 @@ func CreateFolder(path string) error {
 	return nil
 }
 
+// CreateFolderAll creates path and any missing parents (os.MkdirAll).
+func CreateFolderAll(path string) error {
+	err := os.MkdirAll(path, createDirPerm)
+	if err != nil {
+		return mapError(err)
+	}
+	return nil
+}
+
 // RenameFile renames or moves a file. It does not copy. Destination parents
 // must already exist.
 func RenameFile(oldpath, newpath string) error {

@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/HardDie/fsentry/internal/lock"
 )
 
 // Logger receives unexpected sync or close failures. Payload bytes are never logged.
@@ -69,7 +71,9 @@ type DB struct {
 	noLock      bool
 	lockTimeout time.Duration
 	log         Logger
+	now         func() time.Time
 
+	lk *lock.File
 	mu sync.RWMutex
 }
 

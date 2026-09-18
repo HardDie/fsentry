@@ -28,3 +28,10 @@ Copy [\_TEMPLATE.md](_TEMPLATE.md) when behavior lands.
 | UC-18 | Non-blocking try-lock | `internal/fs` | Done | [fs/uc-18-try-lock.md](fs/uc-18-try-lock.md) |
 | UC-19 | Steal a stale lock | `internal/lock` | Done | [lock/uc-19-steal-stale-lock.md](lock/uc-19-steal-stale-lock.md) |
 | UC-20 | Construct a store handle | `fsentry` | Done | [fsentry/uc-20-new.md](fsentry/uc-20-new.md) |
+| UC-21 | Init the store root | `fsentry` | Done | [fsentry/uc-21-init.md](fsentry/uc-21-init.md) |
+| UC-22 | Create a folder | `fsentry` | Done | [fsentry/uc-22-create-folder.md](fsentry/uc-22-create-folder.md) |
+| UC-23 | Get a folder | `fsentry` | Done | [fsentry/uc-23-get-folder.md](fsentry/uc-23-get-folder.md) |
+| UC-24 | List a directory | `fsentry` | Done | [fsentry/uc-24-list.md](fsentry/uc-24-list.md) |
+| UC-25 | Move (rename) a folder | `fsentry` | Done | [fsentry/uc-25-move-folder.md](fsentry/uc-25-move-folder.md) |
+| UC-26 | Update folder payload | `fsentry` | Done | [fsentry/uc-26-update-folder.md](fsentry/uc-26-update-folder.md) |
+| UC-27 | Remove a folder | `fsentry` | Done | [fsentry/uc-27-remove-folder.md](fsentry/uc-27-remove-folder.md) |
