@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	fsio "github.com/HardDie/fsentry/internal/io"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
@@ -499,8 +500,8 @@ func TestBinary(t *testing.T) {
 
 		// Try to create entry in not exist subdirectory
 		err = db.CreateBinary("bad_path", []byte("data"), "bad")
-		if !errors.Is(err, fsentry_error.ErrorBadPath) {
-			t.Fatal("Bad path for folder")
+		if !errors.Is(err, fsio.ErrorNotExist) {
+			t.Fatalf("Bad path for folder: %v", err)
 		}
 
 		// Create binary
@@ -511,8 +512,8 @@ func TestBinary(t *testing.T) {
 
 		// Try to create duplicate
 		err = db.CreateBinary("some_binary", []byte("data"))
-		if !errors.Is(err, fsentry_error.ErrorExist) {
-			t.Fatal("Entry already exist")
+		if !errors.Is(err, fsio.ErrorExist) {
+			t.Fatalf("Entry already exist: %v", err)
 		}
 
 		err = db.Drop()

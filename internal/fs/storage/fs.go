@@ -11,12 +11,12 @@ import (
 
 	"github.com/otiai10/copy"
 
+	fsio "github.com/HardDie/fsentry/internal/io"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
 const (
 	CreateDirPerm   = 0755
-	CreateFileFlags = os.O_WRONLY | os.O_CREATE | os.O_EXCL
 	UpdateFileFlags = os.O_WRONLY | os.O_TRUNC
 	CreateFilePerm  = 0666
 )
@@ -29,15 +29,9 @@ func New() FS {
 
 // CreateFile allows you to create a file and fill it with some binary data.
 func (r FS) CreateFile(path string, data []byte) error {
-	file, err := os.OpenFile(path, CreateFileFlags, CreateFilePerm)
+	file, err := fsio.CreateFile(path)
 	if err != nil {
-		if e := isKnownError(err); e != nil {
-			if errors.Is(e, fsentry_error.ErrorIsDirectory) {
-				return fsentry_error.Wrap(err, fsentry_error.ErrorExist)
-			}
-			return e
-		}
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		return err
 	}
 	defer func() {
 		if err = file.Sync(); err != nil {

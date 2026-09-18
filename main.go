@@ -1,4 +1,4 @@
-// Package fsentry fsentry
+// Package fsentry
 //
 // Allows storing hierarchical data in files and folders on the file system
 // with json descriptions and creation/update timestamps.

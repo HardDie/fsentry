@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"testing"
 
+	fsio "github.com/HardDie/fsentry/internal/io"
 	acl "github.com/hectane/go-acl"
 
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
@@ -47,8 +48,8 @@ func TestCreateFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("file already exist, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorExist) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorExist, err)
+		if !errors.Is(err, fsio.ErrorExist) {
+			t.Fatalf("error wait: %q; got: %q", fsio.ErrorExist, err)
 		}
 	})
 
@@ -71,8 +72,8 @@ func TestCreateFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("file already exist, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorExist) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorExist, err)
+		if !errors.Is(err, fsio.ErrorExist) {
+			t.Fatalf("error wait: %q; got: %q", fsio.ErrorExist, err)
 		}
 	})
 
@@ -94,8 +95,8 @@ func TestCreateFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("don't have permission, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorPermissions) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorPermissions, err)
+		if !errors.Is(err, fsio.ErrorPermissions) {
+			t.Fatalf("error wait: %q; got: %q", fsio.ErrorPermissions, err)
 		}
 	})
 }

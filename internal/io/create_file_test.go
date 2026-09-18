@@ -37,9 +37,12 @@ func TestCreateFile(t *testing.T) {
 		tempDir := t.TempDir()
 		filePath := filepath.Join(tempDir, "existing.txt")
 		// Pre-create the file.
-		os.WriteFile(filePath, []byte("hello"), 0666)
+		err := os.WriteFile(filePath, []byte("hello"), 0666)
+		if err != nil {
+			t.Fatalf("Can't pre-create file 'existing.txt': %v", err)
+		}
 
-		_, err := CreateFile(filePath)
+		_, err = CreateFile(filePath)
 		if !errors.Is(err, ErrorExist) {
 			t.Errorf("Expected ErrorExist, but got: %v", err)
 		}
@@ -59,10 +62,13 @@ func TestCreateFile(t *testing.T) {
 		tempDir := t.TempDir()
 		// Create a file where a directory should be in the path.
 		parentFilePath := filepath.Join(tempDir, "a_file.txt")
-		os.WriteFile(parentFilePath, []byte("i am a file"), 0666)
+		err := os.WriteFile(parentFilePath, []byte("i am a file"), 0666)
+		if err != nil {
+			t.Fatalf("Can't pre-create file 'a_file.txt': %v", err)
+		}
 
 		filePath := filepath.Join(parentFilePath, "another_file.txt")
-		_, err := CreateFile(filePath)
+		_, err = CreateFile(filePath)
 		if !errors.Is(err, ErrorNotDirectory) {
 			t.Errorf("Expected ErrorNotDirectory, but got: %v", err)
 		}
