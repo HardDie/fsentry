@@ -211,7 +211,7 @@ func addZipFile(zw *zip.Writer, abs, zipName string) error {
 	if err != nil {
 		return err
 	}
-	defer fs.Close(f)
+	defer func() { _ = fs.Close(f) }()
 	w, err := zw.Create(zipName)
 	if err != nil {
 		return ErrInternal
@@ -268,7 +268,7 @@ func extractZipFile(zf *zip.File, dest string) error {
 	if err != nil {
 		return ErrBadArchive
 	}
-	defer src.Close()
+	defer func() { _ = src.Close() }()
 	out, err := fs.CreateFile(dest)
 	if err != nil {
 		return err

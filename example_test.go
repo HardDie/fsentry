@@ -79,7 +79,7 @@ func ExampleNew() {
 	if err != nil {
 		panic(err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	db := fsentry.New(dir, fsentry.WithPretty(), fsentry.WithNoLockFile())
 	fmt.Println(db != nil)
@@ -92,7 +92,7 @@ func ExampleWithPretty() {
 	if err != nil {
 		panic(err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	db := fsentry.New(dir, fsentry.WithNoLockFile(), fsentry.WithPretty())
 	if err := db.Init(); err != nil {
@@ -115,7 +115,7 @@ func ExampleWithLogger() {
 	if err != nil {
 		panic(err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	db := fsentry.New(dir, fsentry.WithNoLockFile(), fsentry.WithLogger(exampleLog{}))
 	if err := db.Init(); err != nil {
@@ -131,7 +131,7 @@ func ExampleWithNoLockFile() {
 	if err != nil {
 		panic(err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	db := fsentry.New(dir, fsentry.WithNoLockFile())
 	if err := db.Init(); err != nil {
@@ -148,7 +148,7 @@ func ExampleWithLockFile() {
 	if err != nil {
 		panic(err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	db := fsentry.New(dir, fsentry.WithNoLockFile(), fsentry.WithLockFile())
 	if err := db.Init(); err != nil {
@@ -165,7 +165,7 @@ func ExampleWithLockTimeout() {
 	if err != nil {
 		panic(err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	db := fsentry.New(dir, fsentry.WithLockFile(), fsentry.WithLockTimeout(time.Minute))
 	if err := db.Init(); err != nil {
@@ -215,7 +215,7 @@ func ExampleDB_Init() {
 	if err != nil {
 		panic(err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	db := fsentry.New(dir, fsentry.WithNoLockFile())
 	if err := db.Init(); err != nil {

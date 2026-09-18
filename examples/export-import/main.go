@@ -19,12 +19,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.RemoveAll(srcDir)
+	defer func() { _ = os.RemoveAll(srcDir) }()
 	dstDir, err := os.MkdirTemp("", "fsentry-dst-")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.RemoveAll(dstDir)
+	defer func() { _ = os.RemoveAll(dstDir) }()
 
 	src := fsentry.New(srcDir, fsentry.WithNoLockFile())
 	if err := src.Init(); err != nil {

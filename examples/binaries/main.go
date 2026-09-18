@@ -15,7 +15,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 	fmt.Println("root:", dir)
 
 	db := fsentry.New(dir, fsentry.WithNoLockFile())

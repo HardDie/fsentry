@@ -17,7 +17,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.RemoveAll(prettyDir)
+	defer func() { _ = os.RemoveAll(prettyDir) }()
 
 	pretty := fsentry.New(prettyDir, fsentry.WithNoLockFile(), fsentry.WithPretty())
 	if err := pretty.Init(); err != nil {
@@ -36,7 +36,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.RemoveAll(lockedDir)
+	defer func() { _ = os.RemoveAll(lockedDir) }()
 
 	locked := fsentry.New(lockedDir, fsentry.WithLockFile(), fsentry.WithLockTimeout(time.Minute))
 	if err := locked.Init(); err != nil {
@@ -49,7 +49,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.RemoveAll(openDir)
+	defer func() { _ = os.RemoveAll(openDir) }()
 	open := fsentry.New(openDir, fsentry.WithNoLockFile())
 	if err := open.Init(); err != nil {
 		log.Fatal(err)

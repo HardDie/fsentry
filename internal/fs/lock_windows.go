@@ -10,6 +10,14 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+const (
+	// lockRegionOff is the LockFileEx offset so bytes 0–7 stay readable
+	// (unix-nano stamp) while the region at offset 8 is locked. Unix flock
+	// is whole-file (see lock_unix.go).
+	lockRegionOff = 8
+	lockBytes     = 1
+)
+
 func lockOverlapped() windows.Overlapped {
 	return windows.Overlapped{Offset: lockRegionOff}
 }
