@@ -41,3 +41,8 @@ Copy [\_TEMPLATE.md](_TEMPLATE.md) when behavior lands.
 | UC-31 | Update entry payload | `fsentry` | Done | [fsentry/uc-31-update-entry.md](fsentry/uc-31-update-entry.md) |
 | UC-32 | Duplicate an entry | `fsentry` | Done | [fsentry/uc-32-duplicate-entry.md](fsentry/uc-32-duplicate-entry.md) |
 | UC-33 | Remove an entry | `fsentry` | Done | [fsentry/uc-33-remove-entry.md](fsentry/uc-33-remove-entry.md) |
+| UC-34 | Create a binary | `fsentry` | Done | [fsentry/uc-34-create-binary.md](fsentry/uc-34-create-binary.md) |
+| UC-35 | Get a binary | `fsentry` | Done | [fsentry/uc-35-get-binary.md](fsentry/uc-35-get-binary.md) |
+| UC-36 | Move (rename) a binary | `fsentry` | Done | [fsentry/uc-36-move-binary.md](fsentry/uc-36-move-binary.md) |
+| UC-37 | Update a binary | `fsentry` | Done | [fsentry/uc-37-update-binary.md](fsentry/uc-37-update-binary.md) |
+| UC-38 | Remove a binary | `fsentry` | Done | [fsentry/uc-38-remove-binary.md](fsentry/uc-38-remove-binary.md) |
