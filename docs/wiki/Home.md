@@ -42,14 +42,14 @@ Production: lock file **on** (default). Tests: [Testing](Testing). Concurrency d
 
 ## Publishing these pages
 
-The markdown in the `wiki/` directory of the source repository is the source for this GitHub wiki (`https://github.com/HardDie/fsentry/wiki`). Copy `*.md` (including `_Sidebar.md` and `_Footer.md`) into the wiki git remote:
+The markdown in `docs/wiki/` in the source repository is the source for this GitHub wiki (`https://github.com/HardDie/fsentry/wiki`). Copy `*.md` (including `_Sidebar.md` and `_Footer.md`) into the wiki git remote:
 
 ```bash
 git clone https://github.com/HardDie/fsentry.wiki.git
-cp /path/to/fsentry/wiki/*.md fsentry.wiki/
+cp /path/to/fsentry/docs/wiki/*.md fsentry.wiki/
 cd fsentry.wiki
 git add .
-git commit -m "Sync wiki from repo wiki/"
+git commit -m "Sync wiki from repo docs/wiki/"
 git push
 ```
 

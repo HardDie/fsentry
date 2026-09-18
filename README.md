@@ -60,7 +60,7 @@ func main() {
 
 ## Wiki
 
-Guides and copy-paste examples live on the [GitHub wiki](https://github.com/HardDie/fsentry/wiki). Source for those pages is in [`wiki/`](wiki/) in this repo.
+Guides and copy-paste examples live on the [GitHub wiki](https://github.com/HardDie/fsentry/wiki). Source for those pages is in [`docs/wiki/`](docs/wiki/) in this repo.
 
 | Page | Topic |
 |---|---|

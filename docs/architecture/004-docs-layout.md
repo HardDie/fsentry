@@ -14,7 +14,7 @@ The rewrite needs a short user entry, agent/implementation rules, recorded archi
 
 1. **Only README.**
 2. **CURSOR.md only** (agent spec doubles as user and architecture docs).
-3. **README (users) + CURSOR.md (agents) + `docs/architecture` (ADRs) + `docs/use-cases` (only after the code exists) + GitHub wiki (`wiki/` in this repo).** README stays short. Worked examples and operator how-to live on the wiki (page slugs, `_Sidebar.md` / `_Footer.md`, links without `.md`).
+3. **README (users) + CURSOR.md (agents) + `docs/architecture` (ADRs) + `docs/use-cases` (only after the code exists) + GitHub wiki (`docs/wiki/` in this repo).** README stays short. Worked examples and operator how-to live on the wiki (page slugs, `_Sidebar.md` / `_Footer.md`, links without `.md`).
 
 ## Decision
 
@@ -35,4 +35,4 @@ Write `docs/use-cases/uc-NN-….md` from `_TEMPLATE.md` when behavior lands; set
 
 ### Neutral
 
-* Wiki source is `wiki/*.md` (GitHub wiki). Publish by copying those files to `github.com/HardDie/fsentry.wiki.git`. README links to `https://github.com/HardDie/fsentry/wiki/Page-Slug`.
+* Wiki source is `docs/wiki/*.md` (GitHub wiki). Publish by copying those files to `github.com/HardDie/fsentry.wiki.git`. README links to `https://github.com/HardDie/fsentry/wiki/Page-Slug`.

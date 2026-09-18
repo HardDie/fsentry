@@ -339,7 +339,7 @@ This file stays lean. **[README.md](README.md)** is the short user entry (what t
 | If you need… | Read |
 |---|---|
 | What the library is, install, example | **[README.md](README.md)** |
-| Worked examples, GitHub wiki | **[wiki/](wiki/Home.md)** (publish to [fsentry wiki](https://github.com/HardDie/fsentry/wiki)) |
+| Worked examples, GitHub wiki | **[docs/wiki/](docs/wiki/Home.md)** (publish to [fsentry wiki](https://github.com/HardDie/fsentry/wiki)) |
 | On-disk format, API, layout | this file |
 | Why a decision was made | **[docs/architecture](docs/architecture/INDEX.md)** |
 | Consumer that must keep working | `../DeckBuilder/internal/db/` |
@@ -388,10 +388,10 @@ This is a **library**, not an application. No `cmd/` until someone asks for a CL
 │   ├── validate/
 │   └── notebook/
 ├── integration/                # external package; //go:build integration
-├── wiki/                       # GitHub wiki pages (Home, Getting-Started, …)
 ├── docs/
 │   ├── architecture/
-│   └── use-cases/              # UC files only after the code exists
+│   ├── use-cases/              # UC files only after the code exists
+│   └── wiki/                   # GitHub wiki pages (Home, Getting-Started, …)
 └── .github/
     ├── dependabot.yml
     └── workflows/
