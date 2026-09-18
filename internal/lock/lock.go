@@ -12,6 +12,7 @@ package lock
 import (
 	"errors"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/HardDie/fsentry/internal/fs"
@@ -127,6 +128,12 @@ func (l *File) steal() error {
 		l.file = nil
 	}
 	err := fs.RemoveFile(l.path)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		stolen := l.path + "." + strconv.FormatInt(l.now().UnixNano(), 10)
+		if rerr := fs.RenameFile(l.path, stolen); rerr == nil {
+			err = nil
+		}
+	}
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		file, openErr := fs.OpenLock(l.path)
 		if openErr != nil {

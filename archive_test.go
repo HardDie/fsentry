@@ -239,6 +239,7 @@ func TestExportSkipsLockFile(t *testing.T) {
 	if err := db.Init(); err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { _ = db.Drop() })
 	if _, err := db.CreateEntry("settings", noteBody{Text: "x"}); err != nil {
 		t.Fatal(err)
 	}

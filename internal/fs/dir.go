@@ -1,6 +1,10 @@
 package fs
 
-import "os"
+import (
+	"errors"
+	"os"
+	"path/filepath"
+)
 
 const createDirPerm = os.FileMode(0755)
 
@@ -37,10 +41,22 @@ func RenameFolder(oldpath, newpath string) error {
 
 func rename(oldpath, newpath string) error {
 	err := os.Rename(oldpath, newpath)
-	if err != nil {
-		return mapError(err)
+	if err == nil {
+		return nil
 	}
-	return nil
+	parent := filepath.Dir(newpath)
+	if parent != newpath {
+		info, st := os.Stat(parent)
+		if st == nil && !info.IsDir() {
+			return ErrNotDirectory
+		}
+	}
+	mapped := mapError(err)
+	info, st := os.Stat(newpath)
+	if st == nil && info.IsDir() && !errors.Is(mapped, ErrNotExist) {
+		return ErrExist
+	}
+	return mapped
 }
 
 // RemoveFolder recursively deletes a directory and its contents.
@@ -63,10 +79,14 @@ func RemoveFolder(path string) error {
 // ReadDir lists the names in a directory. It does not recurse.
 func ReadDir(path string) ([]os.DirEntry, error) {
 	entries, err := os.ReadDir(path)
-	if err != nil {
-		return nil, mapError(err)
+	if err == nil {
+		return entries, nil
 	}
-	return entries, nil
+	info, st := os.Stat(path)
+	if st == nil && !info.IsDir() {
+		return nil, ErrNotDirectory
+	}
+	return nil, mapError(err)
 }
 
 // Stat returns file info for path (follows the last symlink).

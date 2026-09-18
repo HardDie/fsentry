@@ -3,7 +3,7 @@ package fs
 import (
 	"io"
 	"os"
-	"syscall"
+	"path/filepath"
 )
 
 const (
@@ -18,7 +18,7 @@ const (
 func CreateFile(path string) (*os.File, error) {
 	file, err := os.OpenFile(path, createFileFlags, createFilePerm)
 	if err != nil {
-		return nil, mapError(err)
+		return nil, mapFilePathError(path, err)
 	}
 	return file, nil
 }
@@ -37,7 +37,7 @@ func OpenRead(path string) (*os.File, error) {
 func OpenWrite(path string) (*os.File, error) {
 	file, err := os.OpenFile(path, openWriteFlags, 0)
 	if err != nil {
-		return nil, mapError(err)
+		return nil, mapFilePathError(path, err)
 	}
 	return file, nil
 }
@@ -134,9 +134,24 @@ func Sync(file *os.File) error {
 
 // RemoveFile unlinks a file. It does not remove directories (ErrIsDirectory).
 func RemoveFile(path string) error {
-	err := syscall.Unlink(path)
-	if err != nil {
-		return mapError(err)
+	return unlinkFile(path)
+}
+
+// mapFilePathError maps an open/create failure. Windows often reports a
+// sharing violation, access denied, or an invented EISDIR when the path is a
+// directory, and PATH_NOT_FOUND when a parent is a file.
+func mapFilePathError(path string, err error) error {
+	mapped := mapError(err)
+	info, st := os.Stat(path)
+	if st == nil && info.IsDir() {
+		return ErrIsDirectory
 	}
-	return nil
+	parent := filepath.Dir(path)
+	if parent != path {
+		info, st := os.Stat(parent)
+		if st == nil && !info.IsDir() {
+			return ErrNotDirectory
+		}
+	}
+	return mapped
 }

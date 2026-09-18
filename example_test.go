@@ -156,6 +156,9 @@ func ExampleWithLockFile() {
 	}
 	_, err = os.Stat(filepath.Join(dir, ".fsentry.lock"))
 	fmt.Println(err == nil)
+	if err := db.Drop(); err != nil {
+		panic(err)
+	}
 	// Output:
 	// true
 }
@@ -172,6 +175,9 @@ func ExampleWithLockTimeout() {
 		panic(err)
 	}
 	fmt.Println("ok")
+	if err := db.Drop(); err != nil {
+		panic(err)
+	}
 	// Output:
 	// ok
 }

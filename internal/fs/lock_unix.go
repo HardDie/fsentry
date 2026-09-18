@@ -7,6 +7,18 @@ import (
 	"syscall"
 )
 
+const openLockFlags = os.O_RDWR | os.O_CREATE
+
+// OpenLock opens path for advisory locking, creating it if needed.
+// It does not truncate. The caller must Close the handle (after Unlock).
+func OpenLock(path string) (*os.File, error) {
+	file, err := os.OpenFile(path, openLockFlags, createFilePerm)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return file, nil
+}
+
 // Lock takes an exclusive advisory lock on file (blocks until available).
 func Lock(file *os.File) error {
 	return flock(file, syscall.LOCK_EX)

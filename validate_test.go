@@ -180,6 +180,7 @@ func TestValidateSkipsLock(t *testing.T) {
 	if err := db.Init(); err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { _ = db.Drop() })
 	probs, err := db.Validate()
 	if err != nil {
 		t.Fatal(err)

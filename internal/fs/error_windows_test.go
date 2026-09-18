@@ -31,6 +31,9 @@ func TestMapErrorWindows(t *testing.T) {
 		{"handle disk full", syscall.Errno(windows.ERROR_HANDLE_DISK_FULL), ErrNoSpace},
 		{"dir not empty", syscall.Errno(windows.ERROR_DIR_NOT_EMPTY), ErrExist},
 		{"lock violation", syscall.Errno(windows.ERROR_LOCK_VIOLATION), ErrLock},
+		{"sharing violation", syscall.Errno(windows.ERROR_SHARING_VIOLATION), ErrBusy},
+		{"is dir", syscall.EISDIR, ErrIsDirectory},
+		{"not empty posix", syscall.ENOTEMPTY, ErrExist},
 		{"unknown", errors.New("cosmic ray"), ErrInternal},
 	}
 	for _, tc := range cases {
