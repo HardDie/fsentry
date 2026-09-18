@@ -356,6 +356,7 @@ This is a **library**, not an application. No `cmd/` until someone asks for a CL
 ├── CURSOR.md
 ├── LICENSE
 ├── go.mod                      # module github.com/HardDie/fsentry; go 1.27
+├── example_test.go             # godoc Example* (run by go test)
 ├── fsentry.go                  # New, options, *DB, Init/Drop/List
 ├── folder.go                   # folder methods
 ├── entry.go                    # (*DB) CreateEntry[T], GetEntry[T], …
@@ -402,6 +403,7 @@ Every package must have documentation `go doc` can print.
 - Every exported type, func, method, const, var has a comment starting with the name.
 - Document `errors.Is` sentinels, folder `path` chains, `WithNoLockFile`, and Go 1.27 generic methods (`Entry[T]` on `*DB`, not on an interface).
 - `QuotedString` documents the double-encoded JSON and why it exists (compat).
+- Every exported function and method has a runnable godoc example in `example_test.go` (`ExampleNameToID`, `ExampleDB_CreateFolder`, …) with an `Output:` block so `go test` executes it.
 
 **Do not**
 

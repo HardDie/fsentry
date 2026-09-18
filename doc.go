@@ -3,4 +3,6 @@
 // Callers store folders, JSON entries, and opaque binaries on disk under a
 // single root. There is no SQL server and no DeckBuilder domain types.
 // Open a store with New, then Init before other operations.
+//
+// Godoc includes a runnable example for every exported function and method.
 package fsentry
