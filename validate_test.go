@@ -2,6 +2,7 @@ package fsentry_test
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -171,6 +172,17 @@ func TestValidateMissing(t *testing.T) {
 	_, err := db.Validate("missing")
 	if err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestValidateCorruptedPath(t *testing.T) {
+	db, root := openStore(t)
+	if err := os.Mkdir(filepath.Join(root, "broken"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	_, err := db.Validate("broken")
+	if !errors.Is(err, fsentry.ErrFolderCorrupted) {
+		t.Fatalf("got %v, want ErrFolderCorrupted", err)
 	}
 }
 

@@ -50,3 +50,4 @@ Copy [\_TEMPLATE.md](_TEMPLATE.md) when behavior lands.
 | UC-40 | Import a zip archive | `fsentry` | Done | [fsentry/uc-40-import.md](fsentry/uc-40-import.md) |
 | UC-41 | Validate a store tree | `fsentry` | Done | [fsentry/uc-41-validate.md](fsentry/uc-41-validate.md) |
 | UC-42 | Full public-API integration flow | `integration` | Done | [fsentry/uc-42-full-flow-integration.md](fsentry/uc-42-full-flow-integration.md) |
+| UC-43 | Require valid folders on a nested path | `fsentry` | Done | [fsentry/uc-43-ensure-path-folders.md](fsentry/uc-43-ensure-path-folders.md) |

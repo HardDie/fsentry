@@ -16,6 +16,7 @@
 
 * **2a. Invalid path:** `ErrBadPath` / `ErrBadName`.
 * **2b. Missing path:** `ErrBadPath` if `path` is non-empty; `ErrNotExist` if the root is missing.
+* **2c. Non-empty `path` is not a valid folder:** `ErrFolderCorrupted` (see [UC-43](uc-43-ensure-path-folders.md)). Root `List()` still reports corrupted children.
 
 ## Postconditions
 

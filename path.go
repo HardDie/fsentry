@@ -30,6 +30,37 @@ func (db *DB) resolve(path ...string) (string, error) {
 	return out, nil
 }
 
+// ensurePath resolves path from the store root. Empty path is the root (not a
+// folder). Each path segment must be a directory with a valid `.info.json`
+// (id and name match the disk ID). A missing segment is ErrBadPath.
+func (db *DB) ensurePath(path ...string) (string, error) {
+	if db.root == "" {
+		return "", ErrBadPath
+	}
+	out := filepath.Clean(db.root)
+	if err := db.statDir(out, false); err != nil {
+		return "", err
+	}
+	for i, seg := range path {
+		next, err := db.resolve(path[:i+1]...)
+		if err != nil {
+			return "", err
+		}
+		if err := db.statDir(next, true); err != nil {
+			return "", err
+		}
+		id, err := db.objectID(seg)
+		if err != nil {
+			return "", err
+		}
+		if err := db.checkFolderValid(next, id); err != nil {
+			return "", err
+		}
+		out = next
+	}
+	return out, nil
+}
+
 func checkPathSegment(seg string) error {
 	if seg == "" || seg == "." || seg == ".." {
 		return ErrBadPath

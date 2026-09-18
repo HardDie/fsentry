@@ -11,11 +11,8 @@ import (
 func (db *DB) CreateFolder[T any](name string, data T, path ...string) (FolderInfo[T], error) {
 	var out FolderInfo[T]
 	err := db.withLock(true, func() error {
-		parent, err := db.resolve(path...)
+		parent, err := db.ensurePath(path...)
 		if err != nil {
-			return err
-		}
-		if err := db.statDir(parent, true); err != nil {
 			return err
 		}
 		id, err := db.objectID(name)
@@ -60,7 +57,7 @@ func (db *DB) CreateFolder[T any](name string, data T, path ...string) (FolderIn
 func (db *DB) GetFolder[T any](name string, path ...string) (FolderInfo[T], error) {
 	var out FolderInfo[T]
 	err := db.withLock(false, func() error {
-		dir, err := db.folderPath(name, path...)
+		dir, id, err := db.folderPath(name, path...)
 		if err != nil {
 			return err
 		}
@@ -73,7 +70,7 @@ func (db *DB) GetFolder[T any](name string, path ...string) (FolderInfo[T], erro
 			}
 			return err
 		}
-		disk, err := db.readInfo(dir)
+		disk, err := db.readValidInfo(dir, id)
 		if err != nil {
 			return err
 		}
@@ -88,11 +85,8 @@ func (db *DB) GetFolder[T any](name string, path ...string) (FolderInfo[T], erro
 func (db *DB) MoveFolder[T any](oldName, newName string, path ...string) (FolderInfo[T], error) {
 	var out FolderInfo[T]
 	err := db.withLock(true, func() error {
-		parent, err := db.resolve(path...)
+		parent, err := db.ensurePath(path...)
 		if err != nil {
-			return err
-		}
-		if err := db.statDir(parent, true); err != nil {
 			return err
 		}
 		oldID, err := db.objectID(oldName)
@@ -115,7 +109,7 @@ func (db *DB) MoveFolder[T any](oldName, newName string, path ...string) (Folder
 		default:
 			return err
 		}
-		disk, err := db.readInfo(oldDir)
+		disk, err := db.readValidInfo(oldDir, oldID)
 		if err != nil {
 			return err
 		}
@@ -140,14 +134,14 @@ func (db *DB) MoveFolder[T any](oldName, newName string, path ...string) (Folder
 func (db *DB) UpdateFolder[T any](name string, data T, path ...string) (FolderInfo[T], error) {
 	var out FolderInfo[T]
 	err := db.withLock(true, func() error {
-		dir, err := db.folderPath(name, path...)
+		dir, id, err := db.folderPath(name, path...)
 		if err != nil {
 			return err
 		}
 		if err := db.statDir(dir, false); err != nil {
 			return err
 		}
-		disk, err := db.readInfo(dir)
+		disk, err := db.readValidInfo(dir, id)
 		if err != nil {
 			return err
 		}
@@ -176,31 +170,28 @@ func (db *DB) UpdateFolder[T any](name string, data T, path ...string) (FolderIn
 // RemoveFolder deletes the folder and its contents. Missing `.info.json` is ErrFolderCorrupted.
 func (db *DB) RemoveFolder(name string, path ...string) error {
 	return db.withLock(true, func() error {
-		dir, err := db.folderPath(name, path...)
+		dir, id, err := db.folderPath(name, path...)
 		if err != nil {
 			return err
 		}
 		if err := db.statDir(dir, false); err != nil {
 			return err
 		}
-		if _, err := db.readInfo(dir); err != nil {
+		if _, err := db.readValidInfo(dir, id); err != nil {
 			return err
 		}
 		return fs.RemoveFolder(dir)
 	})
 }
 
-func (db *DB) folderPath(name string, path ...string) (string, error) {
-	parent, err := db.resolve(path...)
+func (db *DB) folderPath(name string, path ...string) (dir, id string, err error) {
+	parent, err := db.ensurePath(path...)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	if err := db.statDir(parent, true); err != nil {
-		return "", err
-	}
-	id, err := db.objectID(name)
+	id, err = db.objectID(name)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return filepath.Join(parent, id), nil
+	return filepath.Join(parent, id), id, nil
 }

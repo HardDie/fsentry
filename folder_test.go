@@ -111,6 +111,72 @@ func TestCreateGetFolder(t *testing.T) {
 	}
 }
 
+func TestNestedPathRequiresValidFolders(t *testing.T) {
+	dir := t.TempDir()
+	db := fsentry.New(dir, fsentry.WithNoLockFile())
+	if err := db.Init(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.CreateFolder[any]("outer", nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.CreateFolder[any]("inner", nil, "outer"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Remove(filepath.Join(dir, "outer", ".info.json")); err != nil {
+		t.Fatal(err)
+	}
+	_, err := db.GetFolder[any]("inner", "outer")
+	if !errors.Is(err, fsentry.ErrFolderCorrupted) {
+		t.Fatalf("missing info: %v", err)
+	}
+	_, err = db.CreateFolder[any]("child", nil, "outer")
+	if !errors.Is(err, fsentry.ErrFolderCorrupted) {
+		t.Fatalf("create under missing info: %v", err)
+	}
+	_, err = db.CreateEntry[any]("note", nil, "outer")
+	if !errors.Is(err, fsentry.ErrFolderCorrupted) {
+		t.Fatalf("entry under missing info: %v", err)
+	}
+	_, err = db.List("outer")
+	if !errors.Is(err, fsentry.ErrFolderCorrupted) {
+		t.Fatalf("list under missing info: %v", err)
+	}
+
+	if _, err := db.CreateFolder[any]("games", nil); err != nil {
+		t.Fatal(err)
+	}
+	info := filepath.Join(dir, "games", ".info.json")
+	raw, err := os.ReadFile(info)
+	if err != nil {
+		t.Fatal(err)
+	}
+	patched := bytes.Replace(raw, []byte(`"id":"games"`), []byte(`"id":"other"`), 1)
+	if bytes.Equal(patched, raw) {
+		t.Fatalf("id not found in %s", raw)
+	}
+	if err := os.WriteFile(info, patched, 0o666); err != nil {
+		t.Fatal(err)
+	}
+	_, err = db.CreateFolder[any]("title", nil, "games")
+	if !errors.Is(err, fsentry.ErrFolderCorrupted) {
+		t.Fatalf("id mismatch: %v", err)
+	}
+	_, err = db.GetFolder[any]("games")
+	if !errors.Is(err, fsentry.ErrFolderCorrupted) {
+		t.Fatalf("get mismatch: %v", err)
+	}
+
+	list, err := db.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list.CorruptedFolder) == 0 {
+		t.Fatalf("root list should still report corrupted children: %+v", list)
+	}
+}
+
 func TestGetFolderErrors(t *testing.T) {
 	db := openDB(t)
 	_, err := db.GetFolder[any]("")

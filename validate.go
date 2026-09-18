@@ -49,11 +49,8 @@ func (p Problem) String() string {
 func (db *DB) Validate(path ...string) ([]Problem, error) {
 	var out []Problem
 	err := db.withLock(false, func() error {
-		dir, err := db.resolve(path...)
+		dir, err := db.ensurePath(path...)
 		if err != nil {
-			return err
-		}
-		if err := db.statDir(dir, len(path) > 0); err != nil {
 			return err
 		}
 		if len(path) > 0 {

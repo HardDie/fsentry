@@ -105,11 +105,8 @@ func (db *DB) RemoveBinary(name string, path ...string) error {
 }
 
 func (db *DB) binaryPath(name string, path ...string) (file, id string, err error) {
-	parent, err := db.resolve(path...)
+	parent, err := db.ensurePath(path...)
 	if err != nil {
-		return "", "", err
-	}
-	if err := db.statDir(parent, true); err != nil {
 		return "", "", err
 	}
 	id, err = db.objectID(name)

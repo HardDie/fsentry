@@ -24,11 +24,8 @@ func (db *DB) Export(w io.Writer, pathSegs ...string) error {
 		return ErrInternal
 	}
 	return db.withLock(false, func() error {
-		dir, err := db.resolve(pathSegs...)
+		dir, err := db.ensurePath(pathSegs...)
 		if err != nil {
-			return err
-		}
-		if err := db.statDir(dir, len(pathSegs) > 0); err != nil {
 			return err
 		}
 		prefix := ""
@@ -60,11 +57,8 @@ func (db *DB) Import(r io.Reader, pathSegs ...string) error {
 		return ErrBadArchive
 	}
 	return db.withLock(true, func() error {
-		dir, err := db.resolve(pathSegs...)
+		dir, err := db.ensurePath(pathSegs...)
 		if err != nil {
-			return err
-		}
-		if err := db.statDir(dir, len(pathSegs) > 0); err != nil {
 			return err
 		}
 		zr, err := openZipReader(r)

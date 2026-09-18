@@ -17,8 +17,9 @@
 
 * **2a. Bad name:** `ErrBadName`.
 * **2b. Parent missing / not a directory / escapes root:** `ErrBadPath`.
-* **2c. Directory exists:** `ErrExist`.
-* **2d. Info create fails:** the new directory is removed.
+* **2c. Parent exists but is not a valid folder:** `ErrFolderCorrupted` (see [UC-43](uc-43-ensure-path-folders.md)).
+* **2d. Directory exists:** `ErrExist`.
+* **2e. Info create fails:** the new directory is removed.
 
 ## Postconditions
 

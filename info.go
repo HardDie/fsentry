@@ -135,6 +135,22 @@ func (db *DB) readInfo(dir string) (envelope, error) {
 	return env, err
 }
 
+func (db *DB) readValidInfo(dir, id string) (envelope, error) {
+	env, err := db.readInfo(dir)
+	if err != nil {
+		return envelope{}, err
+	}
+	if env.ID != id || NameToID(env.Name.String()) != id {
+		return envelope{}, ErrFolderCorrupted
+	}
+	return env, nil
+}
+
+func (db *DB) checkFolderValid(dir, id string) error {
+	_, err := db.readValidInfo(dir, id)
+	return err
+}
+
 func (db *DB) readEnvelope(path string) (envelope, error) {
 	file, err := fs.OpenRead(path)
 	if err != nil {

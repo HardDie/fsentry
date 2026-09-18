@@ -19,6 +19,7 @@
 
 * **1a. `r == nil` or not a zip:** `ErrBadArchive`.
 * **2a. Missing destination folder:** `ErrBadPath` / `ErrNotExist`.
+* **2b. Non-empty `path` is not a valid folder:** `ErrFolderCorrupted` (see [UC-43](uc-43-ensure-path-folders.md)).
 * **5a. Target path is a directory where a file is expected:** `ErrIsDirectory`.
 * **6a. Extract fails after some creates:** those creates are removed (rollback).
 

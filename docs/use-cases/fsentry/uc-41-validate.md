@@ -18,6 +18,7 @@
 ## Alternative scenarios and errors
 
 * **2a. Missing dest:** `ErrBadPath` / `ErrNotExist` (same as `List`).
+* **2b. Non-empty `path` is not a valid folder:** `ErrFolderCorrupted` (see [UC-43](uc-43-ensure-path-folders.md)). Root `Validate()` still walks corrupted children.
 * **4a. Missing/unreadable `.info.json`:** `ProblemInfo` (walk continues).
 * **4b. Bad entry JSON:** `ProblemJSON`.
 * **4c. Envelope `id` ≠ disk ID:** `ProblemID`.

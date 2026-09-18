@@ -15,7 +15,8 @@
 
 * **2a. Bad name:** `ErrBadName`.
 * **2b. Parent missing:** `ErrBadPath`.
-* **2c. File exists:** `ErrExist`.
+* **2c. Parent exists but is not a valid folder:** `ErrFolderCorrupted` (see [UC-43](uc-43-ensure-path-folders.md)).
+* **2d. File exists:** `ErrExist`.
 
 ## Postconditions
 

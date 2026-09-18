@@ -16,8 +16,9 @@
 
 * **2a. Bad name:** `ErrBadName`.
 * **2b. Parent missing:** `ErrBadPath`.
-* **2c. Folder missing:** `ErrNotExist`.
-* **2d. Directory without readable `.info.json`:** `ErrFolderCorrupted`.
+* **2c. Parent exists but is not a valid folder:** `ErrFolderCorrupted` (see [UC-43](uc-43-ensure-path-folders.md)).
+* **2d. Folder missing:** `ErrNotExist`.
+* **2e. Directory without readable `.info.json` or id/name mismatch:** `ErrFolderCorrupted`.
 
 ## Postconditions
 

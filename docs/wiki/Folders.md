@@ -21,7 +21,7 @@ got, err := db.GetFolder[Game]("My Game")
 // same as GetFolder[Game]("my_game")
 ```
 
-Create fails with [`ErrExist`](Errors) if the ID is already a directory. Missing parent path is [`ErrBadPath`](Errors). A directory without readable `.info.json` is [`ErrFolderCorrupted`](Errors) on get.
+Create fails with [`ErrExist`](Errors) if the ID is already a directory. Missing parent path is [`ErrBadPath`](Errors). A directory without readable `.info.json` (or whose envelope id/name does not match the disk ID) is [`ErrFolderCorrupted`](Errors) on get. The same `ErrFolderCorrupted` is returned if you pass that directory as a parent `path` for a nested create, get, list, export, or validate.
 
 ## Nested folders
 
@@ -31,7 +31,7 @@ Create fails with [`ErrExist`](Errors) if the ID is already a directory. Missing
 _, err := db.CreateFolder("Cards", map[string]int{"count": 0}, "My Game", "My Collection")
 ```
 
-On disk that is `<root>/my_game/my_collection/cards/` plus `.info.json`.
+On disk that is `<root>/my_game/my_collection/cards/` plus `.info.json`. `my_game` and `my_collection` must both be valid folders first.
 
 ## List children
 

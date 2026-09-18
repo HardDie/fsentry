@@ -17,7 +17,8 @@
 ## Alternative scenarios and errors
 
 * **2a. Missing parent / missing folder:** `ErrBadPath` or `ErrNotExist` (same as `List`).
-* **2b. `w == nil`:** `ErrInternal`.
+* **2b. Non-empty `path` is not a valid folder:** `ErrFolderCorrupted` (see [UC-43](uc-43-ensure-path-folders.md)).
+* **2c. `w == nil`:** `ErrInternal`.
 * **3a. Walk / read fails:** the corresponding OS sentinel.
 
 ## Postconditions

@@ -41,6 +41,8 @@ db.List("games", "my_game")
 
 Segments must stay inside the root after `filepath.Clean`. Empty segments, `.`, `..`, and separators inside a name are [`ErrBadPath`](Errors). A missing parent folder is also `ErrBadPath` (not `ErrNotExist`).
 
+Every folder on that chain must be a real store folder: directory plus readable `.info.json` whose `id` and name match the disk ID. If an ancestor is a bare directory, has broken JSON, or the envelope id/name is wrong, the call fails with [`ErrFolderCorrupted`](Errors). Nested `GetFolder` / `CreateEntry` / `List` / `Export` / `Validate` all apply this check. The store root is not a folder (no `.info.json`). `List()` of the root still lists corrupted children in `CorruptedFolder`.
+
 ## IDs in List
 
 [`List`](Folders) returns IDs (`my_game`), not display names (`My Game`). Read `.info.json` / the entry envelope with `GetFolder` / `GetEntry` when you need the original name.

@@ -47,7 +47,7 @@ Writes use create-exclusive (`O_CREATE|O_EXCL`) or replace via temp file + sync 
 
 ## Corrupted folders
 
-A directory that looks like a folder but has missing or unreadable `.info.json` is listed in `List.CorruptedFolder`. `GetFolder` / `RemoveFolder` return [`ErrFolderCorrupted`](Errors) rather than treating it as a normal folder. [`Validate`](Validate) walks the whole subtree and also reports bad entry JSON, ID mismatches, leftover `*.tmp`, and unexpected files.
+A directory that looks like a folder but has missing or unreadable `.info.json` is listed in `List.CorruptedFolder`. `GetFolder` / `RemoveFolder` return [`ErrFolderCorrupted`](Errors) rather than treating it as a normal folder. Using that directory as a parent `path` (nested create/get/list/export) also returns `ErrFolderCorrupted`. [`Validate`](Validate) walks the whole subtree from the root and also reports bad entry JSON, ID mismatches, leftover `*.tmp`, and unexpected files.
 
 ## Compatibility
 

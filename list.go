@@ -13,11 +13,8 @@ import (
 func (db *DB) List(path ...string) (List, error) {
 	var out List
 	err := db.withLock(false, func() error {
-		dir, err := db.resolve(path...)
+		dir, err := db.ensurePath(path...)
 		if err != nil {
-			return err
-		}
-		if err := db.statDir(dir, len(path) > 0); err != nil {
 			return err
 		}
 		entries, err := fs.ReadDir(dir)
