@@ -12,7 +12,9 @@ import (
 
 const infoFile = ".info.json"
 
-type folderDisk struct {
+var errMalformedJSON = errors.New("malformed json")
+
+type envelope struct {
 	ID        string          `json:"id"`
 	Name      QuotedString    `json:"name"`
 	CreatedAt time.Time       `json:"createdAt"`
@@ -20,26 +22,35 @@ type folderDisk struct {
 	Data      json.RawMessage `json:"data"`
 }
 
-func decodeFolder[T any](d folderDisk) (FolderInfo[T], error) {
-	updated := d.UpdatedAt
+func decodeEnvelope[T any](e envelope) (id, name string, created, updated time.Time, data T, err error) {
+	updated = e.UpdatedAt
 	if updated.IsZero() {
-		updated = d.CreatedAt
+		updated = e.CreatedAt
 	}
-	var data T
-	raw := d.Data
+	raw := e.Data
 	if len(raw) == 0 {
 		raw = json.RawMessage("null")
 	}
-	if err := json.Unmarshal(raw, &data); err != nil {
-		return FolderInfo[T]{}, ErrInternal
+	if err = json.Unmarshal(raw, &data); err != nil {
+		return "", "", time.Time{}, time.Time{}, data, ErrInternal
 	}
-	return FolderInfo[T]{
-		ID:        d.ID,
-		Name:      d.Name.String(),
-		CreatedAt: d.CreatedAt.UTC(),
-		UpdatedAt: updated.UTC(),
-		Data:      data,
-	}, nil
+	return e.ID, e.Name.String(), e.CreatedAt.UTC(), updated.UTC(), data, nil
+}
+
+func decodeFolder[T any](e envelope) (FolderInfo[T], error) {
+	id, name, created, updated, data, err := decodeEnvelope[T](e)
+	if err != nil {
+		return FolderInfo[T]{}, err
+	}
+	return FolderInfo[T]{ID: id, Name: name, CreatedAt: created, UpdatedAt: updated, Data: data}, nil
+}
+
+func decodeEntry[T any](e envelope) (Entry[T], error) {
+	id, name, created, updated, data, err := decodeEnvelope[T](e)
+	if err != nil {
+		return Entry[T]{}, err
+	}
+	return Entry[T]{ID: id, Name: name, CreatedAt: created, UpdatedAt: updated, Data: data}, nil
 }
 
 func marshalPayload[T any](data T) (json.RawMessage, error) {
@@ -50,12 +61,19 @@ func marshalPayload[T any](data T) (json.RawMessage, error) {
 	return raw, nil
 }
 
-func (db *DB) writeInfoCreate(dir string, disk folderDisk) error {
-	raw, err := jsonutil.Encode(disk, db.pretty)
+func (db *DB) writeInfoCreate(dir string, env envelope) error {
+	return db.writeJSONCreate(filepath.Join(dir, infoFile), env)
+}
+
+func (db *DB) writeInfoReplace(dir string, env envelope) error {
+	return db.writeJSONReplace(filepath.Join(dir, infoFile), env)
+}
+
+func (db *DB) writeJSONCreate(path string, env envelope) error {
+	raw, err := jsonutil.Encode(env, db.pretty)
 	if err != nil {
 		return ErrInternal
 	}
-	path := filepath.Join(dir, infoFile)
 	file, err := fs.CreateFile(path)
 	if err != nil {
 		return err
@@ -74,13 +92,12 @@ func (db *DB) writeInfoCreate(dir string, disk folderDisk) error {
 	return fs.Close(file)
 }
 
-func (db *DB) writeInfoReplace(dir string, disk folderDisk) error {
-	raw, err := jsonutil.Encode(disk, db.pretty)
+func (db *DB) writeJSONReplace(path string, env envelope) error {
+	raw, err := jsonutil.Encode(env, db.pretty)
 	if err != nil {
 		return ErrInternal
 	}
-	tmp := filepath.Join(dir, infoFile+".tmp")
-	final := filepath.Join(dir, infoFile)
+	tmp := path + ".tmp"
 	_ = fs.RemoveFile(tmp)
 	file, err := fs.CreateFile(tmp)
 	if err != nil {
@@ -103,35 +120,46 @@ func (db *DB) writeInfoReplace(dir string, disk folderDisk) error {
 		_ = fs.RemoveFile(tmp)
 		return err
 	}
-	if err := fs.RenameFile(tmp, final); err != nil {
+	if err := fs.RenameFile(tmp, path); err != nil {
 		_ = fs.RemoveFile(tmp)
 		return err
 	}
 	return nil
 }
 
-func (db *DB) readInfo(dir string) (folderDisk, error) {
-	path := filepath.Join(dir, infoFile)
+func (db *DB) readInfo(dir string) (envelope, error) {
+	env, err := db.readEnvelope(filepath.Join(dir, infoFile))
+	if errors.Is(err, fs.ErrNotExist) || errors.Is(err, errMalformedJSON) {
+		return envelope{}, ErrFolderCorrupted
+	}
+	return env, err
+}
+
+func (db *DB) readEnvelope(path string) (envelope, error) {
 	file, err := fs.OpenRead(path)
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return folderDisk{}, ErrFolderCorrupted
-		}
-		return folderDisk{}, err
+		return envelope{}, err
 	}
 	buf, err := fs.Read(file, nil)
 	closeErr := fs.Close(file)
 	if err != nil {
-		return folderDisk{}, err
+		return envelope{}, err
 	}
 	if closeErr != nil {
-		return folderDisk{}, closeErr
+		return envelope{}, closeErr
 	}
-	var disk folderDisk
-	if err := json.Unmarshal(buf, &disk); err != nil {
-		return folderDisk{}, ErrFolderCorrupted
+	var env envelope
+	if err := json.Unmarshal(buf, &env); err != nil {
+		return envelope{}, errMalformedJSON
 	}
-	return disk, nil
+	return env, nil
+}
+
+func mapEnvelopeRead(err error) error {
+	if errors.Is(err, errMalformedJSON) {
+		return ErrInternal
+	}
+	return err
 }
 
 func (db *DB) statDir(path string, missingBadPath bool) error {
@@ -147,6 +175,20 @@ func (db *DB) statDir(path string, missingBadPath bool) error {
 	}
 	if !info.IsDir() {
 		return ErrNotDirectory
+	}
+	return nil
+}
+
+func (db *DB) statFile(path string) error {
+	info, err := fs.Stat(path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return ErrNotExist
+		}
+		return err
+	}
+	if info.IsDir() {
+		return ErrNotFile
 	}
 	return nil
 }

@@ -28,7 +28,7 @@ func (db *DB) CreateFolder[T any](name string, data T, path ...string) (FolderIn
 			return err
 		}
 		now := db.clock()
-		disk := folderDisk{
+		disk := envelope{
 			ID:        id,
 			Name:      QuotedString(name),
 			CreatedAt: now,

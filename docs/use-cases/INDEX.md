@@ -35,3 +35,9 @@ Copy [\_TEMPLATE.md](_TEMPLATE.md) when behavior lands.
 | UC-25 | Move (rename) a folder | `fsentry` | Done | [fsentry/uc-25-move-folder.md](fsentry/uc-25-move-folder.md) |
 | UC-26 | Update folder payload | `fsentry` | Done | [fsentry/uc-26-update-folder.md](fsentry/uc-26-update-folder.md) |
 | UC-27 | Remove a folder | `fsentry` | Done | [fsentry/uc-27-remove-folder.md](fsentry/uc-27-remove-folder.md) |
+| UC-28 | Create an entry | `fsentry` | Done | [fsentry/uc-28-create-entry.md](fsentry/uc-28-create-entry.md) |
+| UC-29 | Get an entry | `fsentry` | Done | [fsentry/uc-29-get-entry.md](fsentry/uc-29-get-entry.md) |
+| UC-30 | Move (rename) an entry | `fsentry` | Done | [fsentry/uc-30-move-entry.md](fsentry/uc-30-move-entry.md) |
+| UC-31 | Update entry payload | `fsentry` | Done | [fsentry/uc-31-update-entry.md](fsentry/uc-31-update-entry.md) |
+| UC-32 | Duplicate an entry | `fsentry` | Done | [fsentry/uc-32-duplicate-entry.md](fsentry/uc-32-duplicate-entry.md) |
+| UC-33 | Remove an entry | `fsentry` | Done | [fsentry/uc-33-remove-entry.md](fsentry/uc-33-remove-entry.md) |
