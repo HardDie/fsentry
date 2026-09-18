@@ -27,3 +27,4 @@ Copy [\_TEMPLATE.md](_TEMPLATE.md) when behavior lands.
 | UC-17 | Exclusive lock and unlock | `internal/fs` | Done | [fs/uc-17-lock-unlock.md](fs/uc-17-lock-unlock.md) |
 | UC-18 | Non-blocking try-lock | `internal/fs` | Done | [fs/uc-18-try-lock.md](fs/uc-18-try-lock.md) |
 | UC-19 | Steal a stale lock | `internal/lock` | Done | [lock/uc-19-steal-stale-lock.md](lock/uc-19-steal-stale-lock.md) |
+| UC-20 | Construct a store handle | `fsentry` | Done | [fsentry/uc-20-new.md](fsentry/uc-20-new.md) |
