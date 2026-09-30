@@ -53,3 +53,5 @@ Copy [\_TEMPLATE.md](_TEMPLATE.md) when behavior lands.
 | UC-43 | Require valid folders on a nested path | `fsentry` | Done | [fsentry/uc-43-ensure-path-folders.md](fsentry/uc-43-ensure-path-folders.md) |
 | UC-44 | Duplicate a folder | `fsentry` | Done | [fsentry/uc-44-duplicate-folder.md](fsentry/uc-44-duplicate-folder.md) |
 | UC-46 | Rename a folder without bumping updatedAt | `fsentry` | Done | [fsentry/uc-46-update-folder-name-without-timestamp.md](fsentry/uc-46-update-folder-name-without-timestamp.md) |
+| UC-47 | Export one folder and its children | `fsentry` | Done | [fsentry/uc-47-export-folder.md](fsentry/uc-47-export-folder.md) |
+| UC-48 | Import one folder and its children | `fsentry` | Done | [fsentry/uc-48-import-folder.md](fsentry/uc-48-import-folder.md) |

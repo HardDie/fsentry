@@ -264,6 +264,36 @@ func TestFullPublicFlow(t *testing.T) {
 		}
 	}
 
+	var nodeZip bytes.Buffer
+	if err := db.ExportFolder(&nodeZip, "My Game", "Games"); err != nil {
+		t.Fatal(err)
+	}
+	nodeRoot := t.TempDir()
+	nodeDst := fsentry.New(nodeRoot, fsentry.WithNoLockFile())
+	if err := nodeDst.Init(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := nodeDst.CreateFolder("Games", tag{}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := nodeDst.ImportFolder(bytes.NewReader(nodeZip.Bytes()), "", "Games"); err != nil {
+		t.Fatal(err)
+	}
+	mustValidate(t, nodeDst)
+	wantGame := prefixTree(beforeFiles, "games/my_game/")
+	gotGame := prefixTree(fileTree(t, nodeRoot), "games/my_game/")
+	if !mapsEqual(wantGame, gotGame) {
+		t.Fatalf("node export/import files\nwant %v\ngot %v", keys(wantGame), keys(gotGame))
+	}
+	for k, want := range wantGame {
+		if !bytes.Equal(want, gotGame[k]) {
+			t.Fatalf("node zip file %s mismatch", k)
+		}
+	}
+	if _, err := nodeDst.GetFolder[tag]("Keep Forever"); !errors.Is(err, fsentry.ErrNotExist) {
+		t.Fatal(err)
+	}
+
 	if err := db.RemoveEntry("settings backup"); err != nil {
 		t.Fatal(err)
 	}

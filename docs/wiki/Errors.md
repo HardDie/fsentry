@@ -25,7 +25,7 @@ if errors.Is(err, fsentry.ErrExist) {
 | `ErrNotDirectory` | Expected a directory (including `Init` when root is a file) |
 | `ErrIsDirectory` | Expected a file, found a directory |
 | `ErrFolderCorrupted` | Folder directory exists but `.info.json` is missing, unreadable, or `id` / `name` do not match the disk ID — including when that folder is used as a parent path |
-| `ErrBadArchive` | Invalid zip, or an entry would extract outside the destination — see [Export and import](Export-and-Import) |
+| `ErrBadArchive` | Invalid zip, an entry would extract outside the destination, or `ImportFolder` was given an archive that is not one folder — see [Export and import](Export-and-Import) |
 | `ErrPermission` | OS permission denied |
 | `ErrNoSpace` | Disk full |
 | `ErrReadOnly` | Read-only filesystem |

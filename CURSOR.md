@@ -190,6 +190,8 @@ No global state. Production callers do not pass `WithNoLockFile()`.
 
 (*DB) Export(w io.Writer, path ...string) error
 (*DB) Import(r io.Reader, path ...string) error
+(*DB) ExportFolder(w io.Writer, name string, path ...string) error
+(*DB) ImportFolder(r io.Reader, name string, path ...string) (string, error)
 (*DB) Validate(path ...string) ([]Problem, error)
 ```
 
@@ -226,6 +228,7 @@ Language: `go 1.27` in `go.mod` (generic methods). CI and local toolchain: lates
 - Move renames on disk (new ID) and updates `id`/`name` inside JSON; bumps `updatedAt` except `UpdateFolderNameWithoutTimestamp`.
 - Update replaces `data` and bumps `updatedAt`; does not rename.
 - `Export` writes a zip of the directory at `path` (empty = root). Zip paths use `/`. Skip `.fsentry.lock`. Non-root export prefixes entries with that folder's ID (DeckBuilder `ArchiveFolder`). `Import` extracts into `path`; existing files are `ErrExist`; zip-slip is `ErrBadArchive`; failed extract rolls back files this call created.
+- `ExportFolder(w, name, path…)` writes one folder and its children. `name` is that folder; `path` is the parent chain (a DeckBuilder game is `ExportFolder(w, gameID, "games")`). The zip's top-level folder is that folder's ID. `ImportFolder(r, name, path…)` extracts that archive as a child of `path` inside an existing store and returns the written folder id. Empty `name` keeps the archive id. A non-empty `name` rewrites the zip root to `NameToID(name)` and updates `.info.json` id/name without bumping timestamps, so an existing folder with the archive id does not collide. The destination id, if it already exists, is replaced. Several root folders, a file at the zip root, or a root that is not an id is `ErrBadArchive`. Missing `ExportFolder` source is `ErrNotExist` (same as `GetFolder`).
 - `Validate` walks the tree (empty `path` = root) and returns every on-disk defect (`Problem`). It does not repair. Nil slice means the tree matches the contract (IDs, envelopes, no stray files). Walk errors (missing dest, permission) are `err`.
 
 **Errors** (`errors.Is` on package sentinels; OS errors are classified then dropped so `wrap` is zero-alloc):
@@ -363,7 +366,7 @@ This is a **library**, not an application. No `cmd/` until someone asks for a CL
 ├── folder.go                   # folder methods
 ├── entry.go                    # (*DB) CreateEntry[T], GetEntry[T], …
 ├── binary.go                   # binary methods (GetBinary into buf)
-├── archive.go                  # Export zip / Import zip
+├── archive.go                  # Export / Import and ExportFolder / ImportFolder
 ├── validate.go                 # Validate walk, Problem
 ├── types.go                    # List, Entry[T], FolderInfo[T]
 ├── errors.go                   # sentinels + Wrap

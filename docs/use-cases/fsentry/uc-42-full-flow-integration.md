@@ -12,7 +12,7 @@
 2. Create nested folders, entries, binaries. Create return values equal `Get*`. `Validate` is empty.
 3. Update / move / duplicate / rename without timestamp. Source of duplicate unchanged. Unrelated objects unchanged.
 4. `Export` the store; `Import` into a new root. File trees (except `.fsentry.lock`) are byte-identical. API snapshot (IDs, names, times, payloads) matches.
-5. Folder `Export`/`Import` matches the `games/` subtree files.
+5. Folder `Export`/`Import` matches the `games/` subtree files. `ExportFolder` / `ImportFolder` of `My Game` matches `games/my_game/` and leaves siblings out.
 6. Remove one entry, one binary, one folder. Siblings still get and `Validate` is empty.
 7. `Drop` removes the root. A second store with `WithLockFile` creates `.fsentry.lock` then `Drop`.
 

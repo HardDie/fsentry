@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -564,6 +565,37 @@ func ExampleDB_Export() {
 	// settings.json
 }
 
+func ExampleDB_ExportFolder() {
+	db, _, cleanup := exampleDB()
+	defer cleanup()
+
+	if _, err := db.CreateFolder("My Game", meta{Kind: "game"}); err != nil {
+		panic(err)
+	}
+	if _, err := db.CreateEntry("Rules", note{Body: "draw"}, "My Game"); err != nil {
+		panic(err)
+	}
+	var buf bytes.Buffer
+	if err := db.ExportFolder(&buf, "My Game"); err != nil {
+		panic(err)
+	}
+	zr, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	if err != nil {
+		panic(err)
+	}
+	names := make([]string, len(zr.File))
+	for i, f := range zr.File {
+		names[i] = f.Name
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		fmt.Println(name)
+	}
+	// Output:
+	// my_game/.info.json
+	// my_game/rules.json
+}
+
 func ExampleDB_Import() {
 	src, _, cleanupSrc := exampleDB()
 	defer cleanupSrc()
@@ -587,6 +619,38 @@ func ExampleDB_Import() {
 	fmt.Println(got.Data.Body)
 	// Output:
 	// hello
+}
+
+func ExampleDB_ImportFolder() {
+	src, _, cleanupSrc := exampleDB()
+	defer cleanupSrc()
+	if _, err := src.CreateFolder("My Game", meta{Kind: "game"}); err != nil {
+		panic(err)
+	}
+	if _, err := src.CreateEntry("Rules", note{Body: "draw"}, "My Game"); err != nil {
+		panic(err)
+	}
+	var buf bytes.Buffer
+	if err := src.ExportFolder(&buf, "My Game"); err != nil {
+		panic(err)
+	}
+
+	dst, _, cleanupDst := exampleDB()
+	defer cleanupDst()
+	if _, err := dst.CreateFolder("Games", meta{Kind: "root"}); err != nil {
+		panic(err)
+	}
+	id, err := dst.ImportFolder(bytes.NewReader(buf.Bytes()), "Renamed", "Games")
+	if err != nil {
+		panic(err)
+	}
+	got, err := dst.GetEntry[note]("Rules", "games", id)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(id, got.Data.Body)
+	// Output:
+	// renamed draw
 }
 
 func ExampleDB_Validate() {

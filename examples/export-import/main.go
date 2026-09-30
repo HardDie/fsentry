@@ -72,4 +72,20 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println("inbox folders", list.Folders)
+
+	var gameZip bytes.Buffer
+	if err := src.ExportFolder(&gameZip, "My Notes"); err != nil {
+		log.Fatal(err)
+	}
+	if _, err := dst.CreateFolder[any]("Games", nil); err != nil {
+		log.Fatal(err)
+	}
+	if _, err := dst.ImportFolder(bytes.NewReader(gameZip.Bytes()), "", "games"); err != nil {
+		log.Fatal(err)
+	}
+	imported, err := dst.GetEntry[map[string]string]("Welcome", "games", "my_notes")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("game imported", imported.Data["body"])
 }
