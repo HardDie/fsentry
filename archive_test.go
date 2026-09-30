@@ -402,7 +402,7 @@ func TestImportFolderRenameWhileSourceExists(t *testing.T) {
 	}
 }
 
-func TestImportFolderReplacesDestination(t *testing.T) {
+func TestImportFolderExistingID(t *testing.T) {
 	src := openDB(t)
 	if _, err := src.CreateFolder("Games", noteMeta{}); err != nil {
 		t.Fatal(err)
@@ -432,29 +432,26 @@ func TestImportFolderReplacesDestination(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	id, err := dst.ImportFolder(bytes.NewReader(buf.Bytes()), "", "Games")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if id != "my_game" {
-		t.Fatalf("id %q", id)
+	_, err := dst.ImportFolder(bytes.NewReader(buf.Bytes()), "", "Games")
+	if !errors.Is(err, fsentry.ErrExist) {
+		t.Fatalf("got %v", err)
 	}
 	got, err := dst.GetFolder[noteMeta]("My Game", "games")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Data.Color != "red" {
-		t.Fatalf("%+v", got)
+	if got.Data.Color != "old" {
+		t.Fatalf("existing folder changed: %+v", got)
 	}
-	if _, err := dst.GetEntry[noteBody]("Stale", "games", "my_game"); !errors.Is(err, fsentry.ErrNotExist) {
-		t.Fatalf("stale file kept: %v", err)
-	}
-	rules, err := dst.GetEntry[noteBody]("Rules", "games", "my_game")
+	stale, err := dst.GetEntry[noteBody]("Stale", "games", "my_game")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if rules.Data.Text != "draw" {
-		t.Fatalf("%+v", rules)
+	if stale.Data.Text != "gone" {
+		t.Fatalf("existing file changed: %+v", stale)
+	}
+	if _, err := dst.GetEntry[noteBody]("Rules", "games", "my_game"); !errors.Is(err, fsentry.ErrNotExist) {
+		t.Fatalf("zip contents landed: %v", err)
 	}
 	keep, err := dst.GetFolder[noteMeta]("Keep", "games")
 	if err != nil {
@@ -539,9 +536,12 @@ func TestImportFolderRestoresOnFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = db.ImportFolder(bytes.NewReader(buf.Bytes()), "", "Games")
+	_, err = db.ImportFolder(bytes.NewReader(buf.Bytes()), "Broken", "Games")
 	if err == nil {
 		t.Fatal("expected error")
+	}
+	if _, err := db.GetFolder[noteMeta]("Broken", "games"); !errors.Is(err, fsentry.ErrNotExist) {
+		t.Fatalf("failed import left a folder: %v", err)
 	}
 	got, err := db.GetFolder[noteMeta]("My Game", "games")
 	if err != nil {

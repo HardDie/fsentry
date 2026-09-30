@@ -88,9 +88,9 @@ func (db *DB) Import(r io.Reader, pathSegs ...string) error {
 // file is written, and the folder's .info.json id and name are updated with
 // timestamps left unchanged. An existing folder with the source id is left in
 // place, so importing "Foo" as "Bar" while "Foo" already exists succeeds.
-// An existing folder with the destination id is replaced. Other children of
-// path are not touched. A failed import restores that previous folder and
-// removes files this call created.
+// An existing folder with the destination id is ErrExist and is not modified.
+// Other children of path are not touched. A failed import removes files and
+// directories this call created.
 func (db *DB) ImportFolder(r io.Reader, name string, path ...string) (string, error) {
 	if r == nil {
 		return "", ErrBadArchive
@@ -129,49 +129,43 @@ func (db *DB) ImportFolder(r io.Reader, name string, path ...string) (string, er
 				return err
 			}
 		}
-		for _, e := range entries {
-			dest := filepath.Join(parent, filepath.FromSlash(e.rel))
-			if !underRoot(parent, dest) || !underRoot(db.root, dest) {
-				return ErrBadArchive
-			}
-		}
 		destDir := filepath.Join(parent, destID)
 		if !underRoot(parent, destDir) || !underRoot(db.root, destDir) {
 			return ErrBadArchive
 		}
-		aside := destDir + importReplaceSuffix
-		if _, err := fs.Stat(aside); err == nil {
-			return ErrExist
-		} else if err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return err
-		}
-		moved := false
-		info, err := fs.Stat(destDir)
+		_, err = fs.Stat(destDir)
 		switch {
-		case err == nil && info.IsDir():
-			if err := fs.RenameFolder(destDir, aside); err != nil {
-				return err
-			}
-			moved = true
 		case err == nil:
 			return ErrExist
 		case errors.Is(err, fs.ErrNotExist):
 		default:
 			return err
 		}
+		for _, e := range entries {
+			dest := filepath.Join(parent, filepath.FromSlash(e.rel))
+			if !underRoot(parent, dest) || !underRoot(db.root, dest) {
+				return ErrBadArchive
+			}
+			if e.dir {
+				continue
+			}
+			info, err := fs.Stat(dest)
+			switch {
+			case err == nil:
+				if info.IsDir() {
+					return ErrIsDirectory
+				}
+				return ErrExist
+			case errors.Is(err, fs.ErrNotExist):
+			default:
+				return err
+			}
+		}
 		var created []string
 		err = extractZip(parent, entries, &created)
 		if err != nil {
 			rollbackCreated(created)
-			if moved {
-				_ = fs.RenameFolder(aside, destDir)
-			}
 			return err
-		}
-		if moved {
-			if err := fs.RemoveFolder(aside); err != nil {
-				return err
-			}
 		}
 		id = destID
 		return nil
@@ -225,8 +219,6 @@ func (db *DB) importZip(r io.Reader, pathSegs ...string) error {
 		return nil
 	})
 }
-
-const importReplaceSuffix = ".replacing"
 
 type zipEntry struct {
 	rel  string

@@ -62,7 +62,7 @@ A folder at the store root omits the parent path: `db.ExportFolder(&buf, "My Not
 
 `name` is the display name to assign. Empty keeps the archive id and its `.info.json`. A non-empty name rewrites the zip root to that id before anything is written, and updates `.info.json` without changing timestamps. Importing archive `my_game` as `"Other Title"` leaves an existing `my_game` folder in place.
 
-If the destination id already exists, that folder is replaced. A failed import puts the previous folder back.
+If the destination id already exists, `ImportFolder` returns `ErrExist` and leaves that folder unchanged.
 
 ```go
 id, err := db.ImportFolder(bytes.NewReader(buf.Bytes()), "", "games")
@@ -101,6 +101,6 @@ If the reader also implements `io.ReaderAt` and `Size() int64` (for example `*by
 | Sentinel | When |
 |---|---|
 | `ErrBadArchive` | Not a zip, a path would extract outside the destination, or `ImportFolder` got an archive that is not a single folder |
-| `ErrExist` | A file in the zip already exists at the destination |
+| `ErrExist` | A file in the zip already exists at the destination, or `ImportFolder`'s destination id is already a folder |
 | `ErrIsDirectory` | Zip file would replace an existing directory |
 | `ErrBadPath` / `ErrNotExist` | Destination folder missing. `ExportFolder` returns `ErrNotExist` when the named folder is missing |
