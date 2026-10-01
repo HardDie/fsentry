@@ -1,6 +1,7 @@
 package fsentry
 
 import (
+	"errors"
 	"path/filepath"
 	"strings"
 	"time"
@@ -32,7 +33,8 @@ func (db *DB) resolve(path ...string) (string, error) {
 
 // ensurePath resolves path from the store root. Empty path is the root (not a
 // folder). Each path segment must be a directory with a valid `.info.json`
-// (id and name match the disk ID). A missing segment is ErrBadPath.
+// (id and name match the disk ID). A missing segment is *BadPathError
+// (errors.Is ErrBadPath); Path is the prefix through that segment.
 func (db *DB) ensurePath(path ...string) (string, error) {
 	if db.root == "" {
 		return "", ErrBadPath
@@ -47,6 +49,9 @@ func (db *DB) ensurePath(path ...string) (string, error) {
 			return "", err
 		}
 		if err := db.statDir(next, true); err != nil {
+			if errors.Is(err, ErrBadPath) {
+				return "", missingParent(path[:i+1])
+			}
 			return "", err
 		}
 		id, err := db.objectID(seg)

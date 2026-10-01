@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/HardDie/fsentry"
 )
@@ -36,5 +37,9 @@ func main() {
 	fmt.Println("not exist", errors.Is(err, fsentry.ErrNotExist))
 
 	_, err = db.CreateEntry("x", struct{}{}, "no_parent")
-	fmt.Println("bad path", errors.Is(err, fsentry.ErrBadPath))
+	var pathErr *fsentry.BadPathError
+	if !errors.As(err, &pathErr) {
+		log.Fatal(err)
+	}
+	fmt.Println("bad path", errors.Is(err, fsentry.ErrBadPath), strings.Join(pathErr.Path, "/"))
 }

@@ -88,7 +88,7 @@ This is the library’s public format. Agents must not invent a parallel layout.
 
 **Root.** Caller passes an absolute or relative directory. All operations stay under that root after `filepath.Clean`. Reject empty path segments, `.`, `..`, separators inside a name, and any resolved path that escapes the root (`ErrBadPath`).
 
-**Parent path.** Methods that take `path ...string` walk every folder from the root to that parent before they read or write the target. Each segment must be a directory with a readable `.info.json` whose `id` and `NameToID(name)` match the disk ID. A missing parent is `ErrBadPath`. A parent that exists but is not a valid folder is `ErrFolderCorrupted`. The store root itself is not a folder (no `.info.json`). `List()` / `Validate()` on the root still report corrupted *children*; they do not treat those children as parents for nested calls.
+**Parent path.** Methods that take `path ...string` walk every folder from the root to that parent before they read or write the target. Each segment must be a directory with a readable `.info.json` whose `id` and `NameToID(name)` match the disk ID. A missing parent is `ErrBadPath` (`*BadPathError`; `Path` is the prefix through the missing segment). A parent that exists but is not a valid folder is `ErrFolderCorrupted`. The store root itself is not a folder (no `.info.json`). `List()` / `Validate()` on the root still report corrupted *children*; they do not treat those children as parents for nested calls.
 
 **ID from name.** `NameToID(name)`:
 
@@ -236,7 +236,7 @@ Language: `go 1.27` in `go.mod` (generic methods). CI and local toolchain: lates
 | Sentinel | When |
 |---|---|
 | `ErrBadName` | name/id sanitizes to empty or reserved |
-| `ErrBadPath` | parent missing, not a directory, or path escapes root |
+| `ErrBadPath` | parent missing (`*BadPathError` names the prefix), not a directory, or path escapes root |
 | `ErrExist` | create/move/import target already exists |
 | `ErrNotExist` | get/update/remove/move source missing |
 | `ErrNotFile` / `ErrNotDirectory` | wrong object kind at that path |

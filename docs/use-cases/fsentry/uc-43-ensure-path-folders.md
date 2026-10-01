@@ -17,7 +17,7 @@
 
 * **2a. Empty / `.` / `..` / separator in a segment, or path leaves the root:** `ErrBadPath`.
 * **2b. A segment name is not a valid ID:** `ErrBadName`.
-* **2c. A segment directory is missing or a parent is missing:** `ErrBadPath`.
+* **2c. A segment directory is missing or a parent is missing:** `ErrBadPath` as `*BadPathError`. `Path` is the prefix through the missing segment.
 * **2d. A segment exists but is not a directory:** `ErrNotDirectory`.
 * **2e. A segment directory has missing or unreadable `.info.json`, or `id` / `name` do not match the disk ID:** `ErrFolderCorrupted`.
 * **2f. Empty `path` (store root):** only the root directory is required; no `.info.json`.

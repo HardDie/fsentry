@@ -18,7 +18,7 @@ if errors.Is(err, fsentry.ErrExist) {
 | Sentinel | Typical cause |
 |---|---|
 | `ErrBadName` | Name sanitizes to empty or a Windows reserved device (`con`, `prn`, …) |
-| `ErrBadPath` | Empty root on `Init`, missing parent, `.` / `..`, path would leave the root |
+| `ErrBadPath` | Empty root on `Init`, missing parent, `.` / `..`, path would leave the root. A missing parent is `*BadPathError` (still `errors.Is` `ErrBadPath`); `Path` is the prefix through the missing segment |
 | `ErrExist` | Create or move target already exists |
 | `ErrNotExist` | Get / update / remove / move source missing |
 | `ErrNotFile` | Expected a file, found something else |

@@ -217,6 +217,40 @@ func ExampleProblem_String() {
 	// info: broken
 }
 
+func ExampleBadPathError() {
+	db, _, cleanup := exampleDB()
+	defer cleanup()
+	if _, err := db.CreateFolder("Games", struct{}{}); err != nil {
+		panic(err)
+	}
+	_, err := db.CreateFolder("Cards", struct{}{}, "Games", "Missing")
+	var pathErr *fsentry.BadPathError
+	if !errors.As(err, &pathErr) {
+		panic(err)
+	}
+	fmt.Println(errors.Is(err, fsentry.ErrBadPath))
+	fmt.Println(strings.Join(pathErr.Path, "/"))
+	// Output:
+	// true
+	// Games/Missing
+}
+
+func ExampleBadPathError_Error() {
+	err := &fsentry.BadPathError{Path: []string{"Games", "Missing"}}
+	fmt.Println(err.Error())
+	// Output:
+	// bad path: Games/Missing
+}
+
+func ExampleBadPathError_Unwrap() {
+	err := &fsentry.BadPathError{Path: []string{"Games"}}
+	fmt.Println(errors.Is(err, fsentry.ErrBadPath))
+	fmt.Println(err.Unwrap() == fsentry.ErrBadPath)
+	// Output:
+	// true
+	// true
+}
+
 func ExampleDB_Init() {
 	dir, err := os.MkdirTemp("", "fsentry-ex-")
 	if err != nil {
