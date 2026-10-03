@@ -66,6 +66,7 @@ func (db *DB) GetEntry[T any](name string, path ...string) (Entry[T], error) {
 }
 
 // MoveEntry renames the file and updates id/name in the envelope. updatedAt is now.
+// A newName with the same ID keeps the file and rewrites only the name.
 func (db *DB) MoveEntry[T any](oldName, newName string, path ...string) (Entry[T], error) {
 	var out Entry[T]
 	err := db.withLock(true, func() error {
@@ -77,29 +78,36 @@ func (db *DB) MoveEntry[T any](oldName, newName string, path ...string) (Entry[T
 		if err != nil {
 			return err
 		}
+		sameID := oldFile == newFile
 		if err := db.statFile(oldFile); err != nil {
 			return err
 		}
-		switch err := db.statFile(newFile); {
-		case err == nil:
-			return ErrExist
-		case errors.Is(err, ErrNotExist):
-		default:
-			return err
+		if !sameID {
+			switch err := db.statFile(newFile); {
+			case err == nil:
+				return ErrExist
+			case errors.Is(err, ErrNotExist):
+			default:
+				return err
+			}
 		}
 		env, err := db.readEnvelope(oldFile)
 		if err != nil {
 			return mapEnvelopeRead(err)
 		}
-		if err := fs.RenameFile(oldFile, newFile); err != nil {
-			return err
+		if !sameID {
+			if err := fs.RenameFile(oldFile, newFile); err != nil {
+				return err
+			}
 		}
 		now := db.clock()
 		env.ID = newID
 		env.Name = QuotedString(newName)
 		env.UpdatedAt = now
 		if err := db.writeJSONReplace(newFile, env); err != nil {
-			_ = fs.RenameFile(newFile, oldFile)
+			if !sameID {
+				_ = fs.RenameFile(newFile, oldFile)
+			}
 			return err
 		}
 		out, err = decodeEntry[T](env)

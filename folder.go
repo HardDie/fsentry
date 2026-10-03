@@ -83,6 +83,8 @@ func (db *DB) GetFolder[T any](name string, path ...string) (FolderInfo[T], erro
 
 // MoveFolder renames a folder on disk and updates id/name in `.info.json`.
 // updatedAt is set to now. T is the payload type in `.info.json`.
+// A newName with the same ID (only case or punctuation differs) keeps the
+// directory and rewrites only the name.
 func (db *DB) MoveFolder[T any](oldName, newName string, path ...string) (FolderInfo[T], error) {
 	var out FolderInfo[T]
 	err := db.withLock(true, func() error {
@@ -94,7 +96,8 @@ func (db *DB) MoveFolder[T any](oldName, newName string, path ...string) (Folder
 }
 
 // UpdateFolderNameWithoutTimestamp renames a folder like MoveFolder but leaves
-// createdAt and updatedAt unchanged (DeckBuilder import/rename).
+// createdAt and updatedAt unchanged (DeckBuilder import/rename). A newName
+// with the same ID rewrites only the name.
 func (db *DB) UpdateFolderNameWithoutTimestamp[T any](oldName, newName string, path ...string) (FolderInfo[T], error) {
 	var out FolderInfo[T]
 	err := db.withLock(true, func() error {
@@ -120,22 +123,27 @@ func (db *DB) renameFolder[T any](oldName, newName string, bumpUpdated bool, pat
 	}
 	oldDir := filepath.Join(parent, oldID)
 	newDir := filepath.Join(parent, newID)
+	sameID := oldID == newID
 	if err := db.statDir(oldDir, false); err != nil {
 		return FolderInfo[T]{}, err
 	}
-	switch err := db.statDir(newDir, false); {
-	case err == nil:
-		return FolderInfo[T]{}, ErrExist
-	case errors.Is(err, ErrNotExist):
-	default:
-		return FolderInfo[T]{}, err
+	if !sameID {
+		switch err := db.statDir(newDir, false); {
+		case err == nil:
+			return FolderInfo[T]{}, ErrExist
+		case errors.Is(err, ErrNotExist):
+		default:
+			return FolderInfo[T]{}, err
+		}
 	}
 	disk, err := db.readValidInfo(oldDir, oldID)
 	if err != nil {
 		return FolderInfo[T]{}, err
 	}
-	if err := fs.RenameFolder(oldDir, newDir); err != nil {
-		return FolderInfo[T]{}, err
+	if !sameID {
+		if err := fs.RenameFolder(oldDir, newDir); err != nil {
+			return FolderInfo[T]{}, err
+		}
 	}
 	disk.ID = newID
 	disk.Name = QuotedString(newName)
@@ -143,7 +151,9 @@ func (db *DB) renameFolder[T any](oldName, newName string, bumpUpdated bool, pat
 		disk.UpdatedAt = db.clock()
 	}
 	if err := db.writeInfoReplace(newDir, disk); err != nil {
-		_ = fs.RenameFolder(newDir, oldDir)
+		if !sameID {
+			_ = fs.RenameFolder(newDir, oldDir)
+		}
 		return FolderInfo[T]{}, err
 	}
 	return decodeFolder[T](disk)

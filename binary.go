@@ -51,7 +51,7 @@ func (db *DB) GetBinary(name string, buf []byte, path ...string) ([]byte, error)
 	return out, err
 }
 
-// MoveBinary renames `<id>.bin`.
+// MoveBinary renames `<id>.bin`. A newName with the same ID is a no-op.
 func (db *DB) MoveBinary(oldName, newName string, path ...string) error {
 	return db.withLock(true, func() error {
 		oldFile, _, err := db.binaryPath(oldName, path...)
@@ -64,6 +64,9 @@ func (db *DB) MoveBinary(oldName, newName string, path ...string) error {
 		}
 		if err := db.statFile(oldFile); err != nil {
 			return err
+		}
+		if oldFile == newFile {
+			return nil
 		}
 		switch err := db.statFile(newFile); {
 		case err == nil:
