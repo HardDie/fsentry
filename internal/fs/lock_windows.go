@@ -85,6 +85,29 @@ func TryLock(file *os.File) error {
 	return mapError(err)
 }
 
+// TryLockShared takes a shared advisory lock without blocking.
+// Other shared holders do not block it. ErrBusy means an exclusive holder.
+func TryLockShared(file *os.File) error {
+	ol := lockOverlapped()
+	err := windows.LockFileEx(
+		windows.Handle(file.Fd()),
+		windows.LOCKFILE_FAIL_IMMEDIATELY,
+		0,
+		lockBytes,
+		0,
+		&ol,
+	)
+	runtime.KeepAlive(file)
+	if err == nil {
+		return nil
+	}
+	switch windowsErrno(err) {
+	case windows.ERROR_LOCK_VIOLATION, windows.ERROR_IO_PENDING, windows.ERROR_SHARING_VIOLATION:
+		return ErrBusy
+	}
+	return mapError(err)
+}
+
 // Unlock releases the advisory lock on file.
 func Unlock(file *os.File) error {
 	ol := lockOverlapped()

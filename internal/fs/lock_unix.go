@@ -30,6 +30,12 @@ func TryLock(file *os.File) error {
 	return flock(file, syscall.LOCK_EX|syscall.LOCK_NB)
 }
 
+// TryLockShared takes a shared advisory lock without blocking.
+// Other shared holders do not block it. ErrBusy means an exclusive holder.
+func TryLockShared(file *os.File) error {
+	return flock(file, syscall.LOCK_SH|syscall.LOCK_NB)
+}
+
 // Unlock releases the advisory lock on file.
 func Unlock(file *os.File) error {
 	return flock(file, syscall.LOCK_UN)

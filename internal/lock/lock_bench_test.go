@@ -24,3 +24,22 @@ func BenchmarkLockUnlock(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkRLockRUnlock(b *testing.B) {
+	path := filepath.Join(b.TempDir(), FileName)
+	f, err := Open(path, time.Minute)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.Cleanup(func() { _ = f.Close() })
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		if err := f.RLock(); err != nil {
+			b.Fatal(err)
+		}
+		if err := f.RUnlock(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

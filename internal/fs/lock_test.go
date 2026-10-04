@@ -145,3 +145,48 @@ func TestTryLockBusy(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestTryLockShared(t *testing.T) {
+	tests := []struct {
+		name   string
+		first  func(*os.File) error
+		second func(*os.File) error
+		busy   bool
+	}{
+		{"shared then shared", TryLockShared, TryLockShared, false},
+		{"exclusive then shared", TryLock, TryLockShared, true},
+		{"shared then exclusive", TryLockShared, TryLock, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), ".fsentry.lock")
+			a, err := OpenLock(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = Close(a) })
+			b, err := OpenLock(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = Close(b) })
+
+			if err := tt.first(a); err != nil {
+				t.Fatal(err)
+			}
+			err = tt.second(b)
+			if tt.busy != errors.Is(err, ErrBusy) {
+				t.Fatalf("got %v, busy want %v", err, tt.busy)
+			}
+			if !tt.busy && err != nil {
+				t.Fatal(err)
+			}
+			if err := Unlock(a); err != nil {
+				t.Fatal(err)
+			}
+			if err := Unlock(b); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}

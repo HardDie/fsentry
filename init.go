@@ -69,25 +69,35 @@ func (db *DB) withLock(write bool, fn func() error) error {
 		db.mu.RLock()
 		defer db.mu.RUnlock()
 	}
-	if err := db.takeLock(); err != nil {
+	if err := db.takeLock(write); err != nil {
 		return err
 	}
-	defer db.releaseLock()
+	defer db.releaseLock(write)
 	return fn()
 }
 
-func (db *DB) takeLock() error {
+// takeLock takes the lock file: exclusive for a write, shared for a read.
+func (db *DB) takeLock(write bool) error {
 	if db.noLock || db.lk == nil {
 		return nil
 	}
-	return db.lk.Lock()
+	if write {
+		return db.lk.Lock()
+	}
+	return db.lk.RLock()
 }
 
-func (db *DB) releaseLock() {
+func (db *DB) releaseLock(write bool) {
 	if db.noLock || db.lk == nil {
 		return
 	}
-	if err := db.lk.Unlock(); err != nil && db.log != nil {
+	var err error
+	if write {
+		err = db.lk.Unlock()
+	} else {
+		err = db.lk.RUnlock()
+	}
+	if err != nil && db.log != nil {
 		db.log.Error("unlock failed")
 	}
 }

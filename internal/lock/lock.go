@@ -1,7 +1,8 @@
 // Package lock is the inter-process lock file used by *DB.
 //
-// Open the path, then Lock before a store operation and Unlock after.
-// Lock writes a unix-nano stamp. If another process still holds the OS lock
+// Open the path, then Lock before a store write and Unlock after.
+// Reads take RLock and RUnlock: readers in any process share the OS lock,
+// a writer waits for all of them. Both write a unix-nano stamp. If another process still holds the OS lock
 // but the stamp (or file mtime if there is no stamp) is older than Timeout,
 // Lock unlinks the file and takes a new inode so a crashed holder cannot
 // block the store forever. A live holder past Timeout is treated the same
@@ -13,6 +14,7 @@ import (
 	"errors"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/HardDie/fsentry/internal/fs"
@@ -30,11 +32,16 @@ const (
 )
 
 // File is an open lock file handle plus steal timeout.
+// Goroutines of one process share the handle, so mu guards file and readers.
+// The caller must not hold Lock and RLock at once (*DB's RWMutex ensures it).
 type File struct {
 	path    string
 	file    *os.File
 	timeout time.Duration
 	now     func() time.Time
+
+	mu      sync.Mutex
+	readers int
 }
 
 // Open opens (or creates) the lock file at path.
@@ -57,11 +64,51 @@ func Open(path string, timeout time.Duration) (*File, error) {
 
 // Lock takes the exclusive lock, stealing if the stamp is older than timeout.
 func (l *File) Lock() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.acquire(fs.TryLock, writeStamp)
+}
+
+// RLock takes the shared lock, stealing if the stamp is older than timeout.
+// Readers in other processes share it; a writer waits for all of them.
+// Goroutines on this File count as one holder:
+// the first takes the OS lock, the last RUnlock releases it.
+func (l *File) RLock() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.readers > 0 {
+		l.readers++
+		return nil
+	}
+	if err := l.acquire(fs.TryLockShared, touchStamp); err != nil {
+		return err
+	}
+	l.readers = 1
+	return nil
+}
+
+// RUnlock drops one reader. The last one releases the OS lock.
+func (l *File) RUnlock() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.readers == 0 {
+		return nil
+	}
+	l.readers--
+	if l.readers > 0 || l.file == nil {
+		return nil
+	}
+	return fs.Unlock(l.file)
+}
+
+// acquire polls try until it succeeds, then writes the stamp.
+// A stamp older than timeout makes it steal. l.mu must be held.
+func (l *File) acquire(try func(*os.File) error, stamp func(*os.File, int64) error) error {
 	for {
-		err := fs.TryLock(l.file)
+		err := try(l.file)
 		switch {
 		case err == nil:
-			return l.writeStamp()
+			return stamp(l.file, l.now().UnixNano())
 		case !errors.Is(err, fs.ErrBusy):
 			return err
 		}
@@ -81,6 +128,8 @@ func (l *File) Lock() error {
 
 // Unlock releases the OS lock. The stamp is left for the next holder to overwrite.
 func (l *File) Unlock() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	if l.file == nil {
 		return nil
 	}
@@ -89,16 +138,15 @@ func (l *File) Unlock() error {
 
 // Close closes the handle. The OS drops the lock if Unlock was skipped.
 func (l *File) Close() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.readers = 0
 	if l.file == nil {
 		return nil
 	}
 	err := fs.Close(l.file)
 	l.file = nil
 	return err
-}
-
-func (l *File) writeStamp() error {
-	return writeStamp(l.file, l.now().UnixNano())
 }
 
 func (l *File) stale() (bool, error) {

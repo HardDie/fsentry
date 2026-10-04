@@ -41,3 +41,7 @@ Do not spawn extra processes unless a lock test cannot use two handles in one pr
 ### Neutral
 
 * Lock is on for the duration of each public operation, including reads, to keep the rule simple.
+
+## Amendments
+
+1. [ADR 012](012-shared-lock-for-reads.md): reads take a shared lock; writes stay exclusive.

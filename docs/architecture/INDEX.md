@@ -15,3 +15,4 @@ ADRs live in this folder. Number them in order (`001`, `002`, …). Status is on
 | [009](009-tests-tempdir-no-lock.md) | Race tests, `t.TempDir()`, lock off unless testing the lock | Accepted |
 | [010](010-zip-export-import.md) | Zip export and import of a store tree | Accepted |
 | [011](011-validate-problems.md) | Validate walks the tree and reports problems; it does not repair | Accepted |
+| [012](012-shared-lock-for-reads.md) | Shared lock file for reads, exclusive for writes | Accepted |

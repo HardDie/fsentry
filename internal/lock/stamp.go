@@ -21,6 +21,15 @@ func writeStamp(file *os.File, unixNano int64) error {
 	return fs.Sync(file)
 }
 
+// touchStamp writes the stamp for a shared holder: no truncate, no fsync.
+// Waiters read it through the page cache. After a crash the OS lock is gone,
+// so the stamp does not need to reach the disk.
+func touchStamp(file *os.File, unixNano int64) error {
+	var buf [stampSize]byte
+	binary.BigEndian.PutUint64(buf[:], uint64(unixNano))
+	return fs.WriteAt(file, buf[:], 0)
+}
+
 func readStamp(file *os.File) (unixNano int64, ok bool, err error) {
 	var buf [stampSize]byte
 	n, err := fs.ReadAt(file, buf[:], 0)

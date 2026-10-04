@@ -129,7 +129,7 @@ Skip other files. Old fsentry omitted binaries from `List`; this rewrite include
 
 **Writes.** Create uses `O_CREATE|O_EXCL` (exist → `ErrExist`). Update truncates an existing file (missing → `ErrNotExist`). Prefer write-to-temp-in-same-dir + `Sync` + `Rename` for JSON so a crash does not leave a half file. Create folder: `Mkdir` the ID directory, then create `.info.json`; if the info file fails, remove the empty directory. `RemoveFolder` is recursive (`RemoveAll`). Duplicate folder is a deep copy, then rewrite the destination `.info.json` with the new name/id and fresh timestamps.
 
-**Lock file.** Production stores take an advisory exclusive lock on `<root>/.fsentry.lock` for the duration of each public operation (`flock` / `LockFileEx`, not a busy-wait “write pid and hope”). On acquire, the locker writes an 8-byte unix-nano stamp. If a waiter cannot take the lock and the stamp (or mtime if the stamp is missing) is older than the lock timeout, it **steals**: unlink the file, open a new inode, lock that. Default timeout is **10 minutes** (`internal/lock.DefaultTimeout`); `WithLockTimeout` on `New`/`Init` changes it. A crash usually drops the OS lock immediately; steal covers a hung process or a filesystem that keeps the lock. `Init` creates the file. `Drop` unlocks, closes, then removes the root. Hidden; `List` ignores it. This is **on by default**. Unit tests, integration tests, and benchmarks pass `WithNoLockFile()` so they stay fast, isolated, and race-detector-friendly. The exception is tests whose job is locking: those omit the option (or use `WithLockFile()`) and prove two `*DB` handles on the same root cannot enter a write at the same time. Do not spawn extra processes unless a lock test cannot be done with two handles in one process.
+**Lock file.** Production stores take an advisory lock on `<root>/.fsentry.lock` for the duration of each public operation: shared for reads, exclusive for writes (ADR 012) (`flock` / `LockFileEx`, not a busy-wait “write pid and hope”). On acquire, the locker writes an 8-byte unix-nano stamp (a writer also truncates and fsyncs; a reader does not). If a waiter cannot take the lock and the stamp (or mtime if the stamp is missing) is older than the lock timeout, it **steals**: unlink the file, open a new inode, lock that. Default timeout is **10 minutes** (`internal/lock.DefaultTimeout`); `WithLockTimeout` on `New`/`Init` changes it. A crash usually drops the OS lock immediately; steal covers a hung process or a filesystem that keeps the lock. `Init` creates the file. `Drop` unlocks, closes, then removes the root. Hidden; `List` ignores it. This is **on by default**. Unit tests, integration tests, and benchmarks pass `WithNoLockFile()` so they stay fast, isolated, and race-detector-friendly. The exception is tests whose job is locking: those omit the option (or use `WithLockFile()`) and prove two `*DB` handles on the same root cannot enter a write at the same time. Do not spawn extra processes unless a lock test cannot be done with two handles in one process.
 
 **Permissions.** Directories `0755`, files `0666` masked by umask (same idea as old code). Do not chmod through ACLs unless a Windows-only test proves we need `go-acl` again.
 
@@ -252,7 +252,7 @@ Do not panic on missing files. Do not return `os.ErrNotExist` as the only error;
 **Concurrency (two layers)**
 
 1. **In-process:** `sync.RWMutex` on `*DB` (write = Lock, Get/List = RLock). Required because a shared lock-file FD does not serialize goroutines.
-2. **Inter-process:** exclusive advisory lock on `.fsentry.lock` for every public method (reads included; keep it simple). Default on. Waiters poll `TryLock` (~100ms). Stamp older than `WithLockTimeout` (default 10m) → steal.
+2. **Inter-process:** advisory lock on `.fsentry.lock` for every public method. Reads take it shared (`RLock`), writes exclusive (`Lock`). Goroutines on one `*DB` count as one reader: the first takes the OS lock, the last releases it. Default on. Waiters poll `TryLock` / `TryLockShared` (~100ms). Stamp older than `WithLockTimeout` (default 10m) → steal.
 
 Order: mutex first, then flock; reverse on the way out. `WithNoLockFile()` skips layer 2 only.
 
@@ -292,6 +292,7 @@ Goal: **zero allocations** on paths we control. `encoding/json` will still alloc
 | `OpenRead` / `OpenWrite` / `Close` / `Sync` / `Stat` / `ReadDir` / `RemoveFile` / `RemoveFolder` | report OS allocs |
 | `Lock` / `Unlock` | report OS allocs (same FD) |
 | `internal/lock` `Lock` / `Unlock` | report OS allocs including stamp write |
+| `TryLockShared` / `Unlock`, `internal/lock` `RLock` / `RUnlock` | report OS allocs; read path, no fsync |
 | `CreateBinary` / `UpdateBinary` of a fixed `[]byte` | 0 extra besides OS |
 | `GetEntry[struct{…}]` of a small fixed struct | report allocs; fight extras outside `json` |
 | `List` of a small directory | report allocs (OS `Readdir` will allocate names) |

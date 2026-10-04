@@ -38,3 +38,22 @@ func BenchmarkOpenLock(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkTryLockSharedUnlock(b *testing.B) {
+	path := filepath.Join(b.TempDir(), ".fsentry.lock")
+	file, err := OpenLock(path)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.Cleanup(func() { _ = Close(file) })
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		if err := TryLockShared(file); err != nil {
+			b.Fatal(err)
+		}
+		if err := Unlock(file); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
