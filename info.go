@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/HardDie/fsentry/internal/fs"
@@ -97,13 +98,27 @@ func (db *DB) writeJSONReplace(path string, env envelope) error {
 	if err != nil {
 		return ErrInternal
 	}
+	return db.writeFileReplace(path, raw)
+}
+
+// isTempFile reports a write temp left by a crash (`<file>.tmp`).
+// IDs never hold a dot, so no object file ends in `.tmp`.
+func isTempFile(name string) bool {
+	return strings.HasSuffix(name, ".tmp")
+}
+
+// writeFileReplace replaces path with data atomically: it writes `<path>.tmp`
+// in the same folder, fsyncs it, then renames it over path.
+// A crash leaves the old file or the new one, never a partial one.
+// A `.tmp` left by a crash is removed by the next replace (Validate reports it).
+func (db *DB) writeFileReplace(path string, data []byte) error {
 	tmp := path + ".tmp"
 	_ = fs.RemoveFile(tmp)
 	file, err := fs.CreateFile(tmp)
 	if err != nil {
 		return err
 	}
-	if err := fs.Write(file, raw); err != nil {
+	if err := fs.Write(file, data); err != nil {
 		_ = fs.Close(file)
 		_ = fs.RemoveFile(tmp)
 		return err

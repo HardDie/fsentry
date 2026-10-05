@@ -119,7 +119,7 @@ func (db *DB) walkValidate(dir, prefix string, out *[]Problem) error {
 			}
 			continue
 		}
-		if strings.HasSuffix(name, ".tmp") {
+		if isTempFile(name) {
 			*out = append(*out, Problem{Path: rel, Code: ProblemTemp})
 			continue
 		}

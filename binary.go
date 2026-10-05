@@ -79,7 +79,9 @@ func (db *DB) MoveBinary(oldName, newName string, path ...string) error {
 	})
 }
 
-// UpdateBinary truncates and overwrites an existing `<id>.bin`.
+// UpdateBinary replaces an existing `<id>.bin` atomically.
+// The bytes go to `<id>.bin.tmp`, are fsynced, then renamed over the file,
+// so a crash leaves the old content or the new one, never a partial file.
 func (db *DB) UpdateBinary(name string, data []byte, path ...string) error {
 	return db.withLock(true, func() error {
 		file, _, err := db.binaryPath(name, path...)
@@ -89,7 +91,7 @@ func (db *DB) UpdateBinary(name string, data []byte, path ...string) error {
 		if err := db.statFile(file); err != nil {
 			return err
 		}
-		return db.writeBytesReplace(file, data)
+		return db.writeFileReplace(file, data)
 	})
 }
 
@@ -121,14 +123,6 @@ func (db *DB) binaryPath(name string, path ...string) (file, id string, err erro
 
 func (db *DB) writeBytesCreate(path string, data []byte) error {
 	file, err := fs.CreateFile(path)
-	if err != nil {
-		return err
-	}
-	return db.writeBytesClose(file, data)
-}
-
-func (db *DB) writeBytesReplace(path string, data []byte) error {
-	file, err := fs.OpenWrite(path)
 	if err != nil {
 		return err
 	}

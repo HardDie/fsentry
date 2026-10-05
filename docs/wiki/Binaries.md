@@ -28,6 +28,8 @@ if err := db.RemoveBinary("art", "my_notes"); err != nil {
 
 Create of an existing ID is [`ErrExist`](Errors). Update/remove of a missing file is [`ErrNotExist`](Errors).
 
+Update is atomic: the bytes go to `<id>.bin.tmp`, are fsynced, then renamed over the file. After a crash the binary holds its old bytes or its new ones, never part of them. A leftover `.tmp` is removed by the next update; [Validate](Validate) reports it.
+
 `List` includes binary IDs (without `.bin`):
 
 ```go

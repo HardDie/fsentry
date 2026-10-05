@@ -19,7 +19,8 @@ import (
 const zipCopyChunk = 32 * 1024
 
 // Export writes a zip archive of the directory at path (empty path is the store
-// root). Zip names use `/`. The lock file is omitted. A non-root path is stored
+// root). Zip names use `/`. The lock file and write temps (`*.tmp`) are omitted.
+// A non-root path is stored
 // under a top-level folder named with that folder's ID (DeckBuilder-style).
 // To export one folder by name, use ExportFolder.
 func (db *DB) Export(w io.Writer, pathSegs ...string) error {
@@ -46,7 +47,7 @@ func (db *DB) Export(w io.Writer, pathSegs ...string) error {
 // name is that folder (display name or ID). path is its parent chain; empty
 // path means a folder at the store root (a DeckBuilder game under "games"
 // is ExportFolder(w, gameID, "games")). Zip names use `/` and are prefixed
-// with the folder's ID. The lock file is omitted.
+// with the folder's ID. The lock file and write temps (`*.tmp`) are omitted.
 func (db *DB) ExportFolder(w io.Writer, name string, path ...string) error {
 	if w == nil {
 		return ErrInternal
@@ -68,7 +69,8 @@ func (db *DB) ExportFolder(w io.Writer, name string, path ...string) error {
 
 // Import extracts a zip archive into the directory at path (empty path is the
 // store root). Existing files are not overwritten (ErrExist). Paths that would
-// leave the destination are ErrBadArchive. `.fsentry.lock` entries are skipped.
+// leave the destination are ErrBadArchive. `.fsentry.lock` and write temps
+// (`*.tmp`) are skipped.
 // A failed import removes files and directories this call created.
 // To import one folder archive, use ImportFolder.
 func (db *DB) Import(r io.Reader, pathSegs ...string) error {
@@ -281,7 +283,7 @@ func zipRel(name string) (rel string, dir, skip bool, err error) {
 		return "", false, false, ErrBadArchive
 	}
 	base := path.Base(clean)
-	if base == lock.FileName {
+	if base == lock.FileName || (!dir && isTempFile(base)) {
 		return "", false, true, nil
 	}
 	return clean, dir, false, nil
@@ -408,7 +410,7 @@ func (db *DB) addZipTree(zw *zip.Writer, absDir, zipPrefix string) error {
 	}
 	for _, e := range entries {
 		name := e.Name()
-		if name == lock.FileName {
+		if name == lock.FileName || (!e.IsDir() && isTempFile(name)) {
 			continue
 		}
 		abs := filepath.Clean(filepath.Join(absDir, name))

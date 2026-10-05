@@ -1,6 +1,6 @@
 # Export and import
 
-Backup or copy a store (or one [folder](Folders)) as a zip archive. Zip names always use `/`. The lock file is not included. Related: [on-disk format](On-Disk-Format), [errors](Errors), [validate](Validate).
+Backup or copy a store (or one [folder](Folders)) as a zip archive. Zip names always use `/`. The lock file and write temps (`*.tmp`, left by a crash) are not included, and import skips them too. Related: [on-disk format](On-Disk-Format), [errors](Errors), [validate](Validate).
 
 Prerequisites: [Getting started](Getting-Started) (`New` + `Init`).
 
