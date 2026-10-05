@@ -152,7 +152,7 @@ got, err := db.GetEntry[Settings]("settings")
 | Option | Default | Role |
 |---|---|---|
 | `WithPretty()` | compact JSON | indent with a tab |
-| `WithLogger(Logger)` | discard | unexpected sync/close |
+| `WithLogger(Logger)` | discard | unexpected failures (Error/Warn); import steps (Debug); `*slog.Logger` fits |
 | `WithNoLockFile()` | lock **on** | tests and benchmarks only |
 | `WithLockTimeout(d)` | 10 minutes | steal if the lock stamp is older than `d`; `d <= 0` keeps the default |
 
@@ -259,7 +259,7 @@ Do not panic on missing files. Do not return `os.ErrNotExist` as the only error;
 
 Order: mutex first, then flock; reverse on the way out. `WithNoLockFile()` skips layer 2 only.
 
-**Logger.** If set, log unexpected sync/close failures. Do not log payload bytes.
+**Logger.** `slog`-shaped: short lowercase message, then key-value fields; errors as `"err", err` ([ADR 015](docs/architecture/015-structured-logs.md)). Default discards, so call sites never check for nil. Error: unexpected sync, unlock, rollback-remove failures, with `path`. Warn: an import rolled back. Debug: every import step (`import folder: started`, `locked`, `zip read`, `root found`, `targets free`, one `file written` per file, `finished` / `failed` with `step`), plus the cause hidden behind `ErrBadArchive` / `ErrExist`. Do not log payload bytes.
 
 ---
 

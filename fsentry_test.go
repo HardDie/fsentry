@@ -44,13 +44,13 @@ func TestNewDefaults(t *testing.T) {
 	if db.lockTimeout != 0 {
 		t.Fatalf("timeout %v, want 0 (Init uses DefaultTimeout)", db.lockTimeout)
 	}
-	if db.log != nil {
+	if db.log != (discardLogger{}) {
 		t.Fatal("logger default is discard")
 	}
 }
 
 func TestNewOptions(t *testing.T) {
-	log := discardLogger{}
+	log := namedLogger{name: "test"}
 	timeout := 5 * time.Minute
 	db := New("root", WithPretty(), WithLogger(log), WithNoLockFile(), WithLockTimeout(timeout))
 	if !db.pretty {
@@ -75,7 +75,7 @@ func TestWithLockFileOverridesNoLock(t *testing.T) {
 }
 
 func TestWithLoggerNilIgnored(t *testing.T) {
-	log := discardLogger{}
+	log := namedLogger{name: "test"}
 	db := New("root", WithLogger(log), WithLogger(nil))
 	if db.log != log {
 		t.Fatal("nil logger must not clear a previous logger")
@@ -96,9 +96,10 @@ func TestNewNilOption(t *testing.T) {
 	}
 }
 
-type discardLogger struct{}
+// namedLogger is a Logger that compares unequal to the default.
+type namedLogger struct{ name string }
 
-func (discardLogger) Debug(string, ...any) {}
-func (discardLogger) Info(string, ...any)  {}
-func (discardLogger) Warn(string, ...any)  {}
-func (discardLogger) Error(string, ...any) {}
+func (namedLogger) Debug(string, ...any) {}
+func (namedLogger) Info(string, ...any)  {}
+func (namedLogger) Warn(string, ...any)  {}
+func (namedLogger) Error(string, ...any) {}

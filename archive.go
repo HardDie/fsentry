@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/HardDie/fsentry/internal/fs"
 	"github.com/HardDie/fsentry/internal/jsonutil"
@@ -123,32 +124,34 @@ func (db *DB) ImportFolder(r io.Reader, name string, path ...string) (string, er
 // archive is refused before any file is written. A nil progress is the same
 // as ImportFolder.
 func (db *DB) ImportFolderWithProgress(r io.Reader, name string, progress func(ImportProgress), path ...string) (string, error) {
+	l := db.startImport("import folder", "path", strings.Join(path, "/"), "name", name)
 	if r == nil {
+		l.end(ErrBadArchive)
 		return "", ErrBadArchive
 	}
 	var id string
 	err := db.withLock(true, func() error {
+		l.locked()
 		parent, err := db.ensurePath(path...)
 		if err != nil {
 			return err
 		}
-		zr, err := openZipReader(r)
+		entries, err := l.readZip(r)
 		if err != nil {
 			return err
 		}
-		entries, err := prepareZipEntries(zr)
-		if err != nil {
-			return err
-		}
-		root, err := requireSingleNode(entries)
+		l.step = "find root"
+		root, err := requireSingleNode(entries, l)
 		if err != nil {
 			return err
 		}
 		if root == "" || NameToID(root) != root {
+			l.log.Debug("import folder: root is not an id", "root", root)
 			return ErrBadArchive
 		}
 		destID := root
 		if name != "" {
+			l.step = "rename"
 			destID, err = db.objectID(name)
 			if err != nil {
 				return err
@@ -160,6 +163,8 @@ func (db *DB) ImportFolderWithProgress(r io.Reader, name string, progress func(I
 				return err
 			}
 		}
+		l.at("root found", "root", root, "dest", destID)
+		l.step = "check destination"
 		destDir := filepath.Join(parent, destID)
 		if !underRoot(parent, destDir) || !underRoot(db.root, destDir) {
 			return ErrBadArchive
@@ -167,88 +172,149 @@ func (db *DB) ImportFolderWithProgress(r io.Reader, name string, progress func(I
 		_, err = fs.Stat(destDir)
 		switch {
 		case err == nil:
+			l.log.Debug("import folder: destination exists", "dir", destDir)
 			return ErrExist
 		case errors.Is(err, fs.ErrNotExist):
 		default:
 			return err
 		}
-		for _, e := range entries {
-			dest := filepath.Join(parent, filepath.FromSlash(e.rel))
-			if !underRoot(parent, dest) || !underRoot(db.root, dest) {
-				return ErrBadArchive
-			}
-			if e.dir {
-				continue
-			}
-			info, err := fs.Stat(dest)
-			switch {
-			case err == nil:
-				if info.IsDir() {
-					return ErrIsDirectory
-				}
-				return ErrExist
-			case errors.Is(err, fs.ErrNotExist):
-			default:
-				return err
-			}
+		if err := l.checkTargets(parent, db.root, entries); err != nil {
+			return err
 		}
-		var created []string
-		err = extractZip(parent, entries, &created, progress)
-		if err != nil {
-			rollbackCreated(created)
+		if err := l.extract(parent, entries, progress); err != nil {
 			return err
 		}
 		id = destID
 		return nil
 	})
+	l.end(err, "id", id)
 	return id, err
 }
 
 func (db *DB) importZip(r io.Reader, progress func(ImportProgress), pathSegs ...string) error {
+	l := db.startImport("import", "path", strings.Join(pathSegs, "/"))
 	if r == nil {
+		l.end(ErrBadArchive)
 		return ErrBadArchive
 	}
-	return db.withLock(true, func() error {
+	err := db.withLock(true, func() error {
+		l.locked()
 		dir, err := db.ensurePath(pathSegs...)
 		if err != nil {
 			return err
 		}
-		zr, err := openZipReader(r)
+		entries, err := l.readZip(r)
 		if err != nil {
 			return err
 		}
-		entries, err := prepareZipEntries(zr)
-		if err != nil {
+		if err := l.checkTargets(dir, db.root, entries); err != nil {
 			return err
 		}
-		for _, e := range entries {
-			dest := filepath.Join(dir, filepath.FromSlash(e.rel))
-			if !underRoot(dir, dest) || !underRoot(db.root, dest) {
-				return ErrBadArchive
-			}
-			if e.dir {
-				continue
-			}
-			info, err := fs.Stat(dest)
-			switch {
-			case err == nil:
-				if info.IsDir() {
-					return ErrIsDirectory
-				}
-				return ErrExist
-			case errors.Is(err, fs.ErrNotExist):
-			default:
-				return err
-			}
-		}
-		var created []string
-		err = extractZip(dir, entries, &created, progress)
-		if err != nil {
-			rollbackCreated(created)
-			return err
-		}
-		return nil
+		return l.extract(dir, entries, progress)
 	})
+	l.end(err)
+	return err
+}
+
+// importLog writes the Debug lines of one import, so a slow or failing import
+// can be followed step by step. step is where the import is; a failure names it.
+type importLog struct {
+	log   Logger
+	op    string
+	start time.Time
+	step  string
+}
+
+func (db *DB) startImport(op string, args ...any) *importLog {
+	l := &importLog{log: db.log, op: op, start: time.Now()}
+	l.at("started", args...)
+	return l
+}
+
+func (l *importLog) at(step string, args ...any) {
+	l.step = step
+	l.log.Debug(l.op+": "+step, args...)
+}
+
+// locked reports how long the import waited for the store lock.
+func (l *importLog) locked() {
+	l.at("locked", "wait_ms", time.Since(l.start).Milliseconds())
+}
+
+func (l *importLog) end(err error, args ...any) {
+	ms := time.Since(l.start).Milliseconds()
+	if err != nil {
+		l.log.Debug(l.op+": failed", "step", l.step, "err", err, "duration_ms", ms)
+		return
+	}
+	l.log.Debug(l.op+": finished", append(args, "duration_ms", ms)...)
+}
+
+func (l *importLog) readZip(r io.Reader) ([]zipEntry, error) {
+	l.step = "open zip"
+	start := time.Now()
+	zr, size, err := openZipReader(r, l)
+	if err != nil {
+		return nil, err
+	}
+	entries, err := prepareZipEntries(zr, l)
+	if err != nil {
+		return nil, err
+	}
+	var files, dirs int
+	var bytes int64
+	for _, e := range entries {
+		if e.dir {
+			dirs++
+			continue
+		}
+		files++
+		bytes += e.size()
+	}
+	l.at("zip read", "zip_bytes", size, "entries", len(zr.File), "skipped", len(zr.File)-len(entries),
+		"files", files, "dirs", dirs, "bytes", bytes, "duration_ms", time.Since(start).Milliseconds())
+	return entries, nil
+}
+
+// checkTargets refuses an entry that would leave dir or the store, or land on
+// an existing file or directory. Nothing is written before it passes.
+func (l *importLog) checkTargets(dir, storeRoot string, entries []zipEntry) error {
+	l.step = "check targets"
+	for _, e := range entries {
+		dest := filepath.Join(dir, filepath.FromSlash(e.rel))
+		if !underRoot(dir, dest) || !underRoot(storeRoot, dest) {
+			l.log.Debug(l.op+": entry leaves destination", "entry", e.rel)
+			return ErrBadArchive
+		}
+		if e.dir {
+			continue
+		}
+		info, err := fs.Stat(dest)
+		switch {
+		case err == nil:
+			l.log.Debug(l.op+": target exists", "path", dest, "dir", info.IsDir())
+			if info.IsDir() {
+				return ErrIsDirectory
+			}
+			return ErrExist
+		case errors.Is(err, fs.ErrNotExist):
+		default:
+			return err
+		}
+	}
+	l.at("targets free", "dir", dir)
+	return nil
+}
+
+// extract writes the entries; on failure it removes what this call created.
+func (l *importLog) extract(dir string, entries []zipEntry, progress func(ImportProgress)) error {
+	l.step = "extract"
+	var created []string
+	if err := extractZip(dir, entries, &created, progress, l); err != nil {
+		rollbackCreated(created, l)
+		return err
+	}
+	return nil
 }
 
 type zipEntry struct {
@@ -258,7 +324,9 @@ type zipEntry struct {
 	body []byte // set when ImportFolder rewrites .info.json before extract
 }
 
-func openZipReader(r io.Reader) (*zip.Reader, error) {
+// openZipReader opens the archive and returns its size. The zip error behind
+// ErrBadArchive goes to the log.
+func openZipReader(r io.Reader, l *importLog) (*zip.Reader, int64, error) {
 	type sizeReaderAt interface {
 		io.ReaderAt
 		Size() int64
@@ -266,26 +334,30 @@ func openZipReader(r io.Reader) (*zip.Reader, error) {
 	if ras, ok := r.(sizeReaderAt); ok {
 		zr, err := zip.NewReader(ras, ras.Size())
 		if err != nil {
-			return nil, ErrBadArchive
+			l.log.Debug(l.op+": not a zip", "err", err)
+			return nil, 0, ErrBadArchive
 		}
-		return zr, nil
+		return zr, ras.Size(), nil
 	}
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return nil, ErrInternal
+		l.log.Debug(l.op+": read archive", "err", err)
+		return nil, 0, ErrInternal
 	}
 	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
-		return nil, ErrBadArchive
+		l.log.Debug(l.op+": not a zip", "err", err)
+		return nil, 0, ErrBadArchive
 	}
-	return zr, nil
+	return zr, int64(len(data)), nil
 }
 
-func prepareZipEntries(zr *zip.Reader) ([]zipEntry, error) {
+func prepareZipEntries(zr *zip.Reader, l *importLog) ([]zipEntry, error) {
 	var out []zipEntry
 	for _, f := range zr.File {
 		rel, dir, skip, err := zipRel(f.Name)
 		if err != nil {
+			l.log.Debug(l.op+": bad entry name", "entry", f.Name)
 			return nil, err
 		}
 		if skip {
@@ -333,9 +405,13 @@ func (db *DB) writeZip(w io.Writer, dir, prefix string) error {
 
 // requireSingleNode returns the single top-level folder name. Entries must
 // all live under that folder and include at least one file there.
-func requireSingleNode(entries []zipEntry) (string, error) {
-	if len(entries) == 0 {
+func requireSingleNode(entries []zipEntry, l *importLog) (string, error) {
+	refuse := func(reason, entry string) (string, error) {
+		l.log.Debug(l.op+": not a single folder", "reason", reason, "entry", entry)
 		return "", ErrBadArchive
+	}
+	if len(entries) == 0 {
+		return refuse("empty archive", "")
 	}
 	var root string
 	var fileUnder bool
@@ -344,23 +420,23 @@ func requireSingleNode(entries []zipEntry) (string, error) {
 		if root == "" {
 			root = top
 		} else if top != root {
-			return "", ErrBadArchive
+			return refuse("second root", e.rel)
 		}
 		if !nested {
 			if !e.dir {
-				return "", ErrBadArchive
+				return refuse("file at zip root", e.rel)
 			}
 			continue
 		}
 		if rest == "" || rest == "." {
-			return "", ErrBadArchive
+			return refuse("empty name", e.rel)
 		}
 		if !e.dir {
 			fileUnder = true
 		}
 	}
 	if root == "" || !fileUnder {
-		return "", ErrBadArchive
+		return refuse("no file under root", root)
 	}
 	return root, nil
 }
@@ -501,7 +577,7 @@ func copyFileToWriter(w io.Writer, file *os.File) error {
 	}
 }
 
-func extractZip(dir string, entries []zipEntry, created *[]string, progress func(ImportProgress)) error {
+func extractZip(dir string, entries []zipEntry, created *[]string, progress func(ImportProgress), l *importLog) error {
 	var p ImportProgress
 	if progress != nil {
 		for _, e := range entries {
@@ -526,10 +602,14 @@ func extractZip(dir string, entries []zipEntry, created *[]string, progress func
 		if err := ensureDir(filepath.Dir(dest), dir, created); err != nil {
 			return err
 		}
+		start := time.Now()
 		if err := extractZipFile(e.file, e.body, dest); err != nil {
+			l.log.Debug(l.op+": write file", "entry", e.rel, "err", err)
 			return err
 		}
 		*created = append(*created, dest)
+		l.log.Debug(l.op+": file written", "entry", e.rel, "bytes", e.size(),
+			"duration_ms", time.Since(start).Milliseconds())
 		if progress != nil {
 			p.Files++
 			p.Bytes += e.size()
@@ -622,7 +702,8 @@ func ensureDir(p, root string, created *[]string) error {
 	return nil
 }
 
-func rollbackCreated(created []string) {
+func rollbackCreated(created []string, l *importLog) {
+	removed := 0
 	for i := len(created) - 1; i >= 0; i-- {
 		p := created[i]
 		info, err := fs.Stat(p)
@@ -630,9 +711,15 @@ func rollbackCreated(created []string) {
 			continue
 		}
 		if info.IsDir() {
-			_ = fs.RemoveFolder(p)
+			err = fs.RemoveFolder(p)
+		} else {
+			err = fs.RemoveFile(p)
+		}
+		if err != nil {
+			l.log.Error(l.op+": rollback remove", "path", p, "err", err)
 			continue
 		}
-		_ = fs.RemoveFile(p)
+		removed++
 	}
+	l.log.Warn(l.op+": rolled back", "created", len(created), "removed", removed)
 }

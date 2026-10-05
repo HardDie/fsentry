@@ -18,3 +18,4 @@ ADRs live in this folder. Number them in order (`001`, `002`, …). Status is on
 | [012](012-shared-lock-for-reads.md) | Shared lock file for reads, exclusive for writes | Accepted |
 | [013](013-atomic-binary-update.md) | `UpdateBinary` writes a temp file and renames it | Accepted |
 | [014](014-import-progress-callback.md) | Optional progress callback for zip import | Accepted |
+| [015](015-structured-logs.md) | slog-shaped log lines; Debug steps for import | Accepted |

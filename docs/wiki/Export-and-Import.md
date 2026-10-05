@@ -108,6 +108,23 @@ id, err := db.ImportFolderWithProgress(bytes.NewReader(data), "", func(p fsentry
 
 The callback runs once before the first file (`Files` is 0), then after each file. Directories are not counted; bytes are the uncompressed sizes from the zip headers. It is not called when the archive is refused before anything is written (`ErrExist`, `ErrBadArchive`). It runs while the store holds its write lock: do not call the same `*DB` from it, and return quickly (store the numbers for a poller). A nil callback is the plain `Import` / `ImportFolder`.
 
+## Logs
+
+Pass a `*slog.Logger` with `WithLogger` to follow an import. At Debug level every step writes a line (`import folder: …` or `import: …`):
+
+| Message | Fields |
+|---|---|
+| `started` | `path`, `name` |
+| `locked` | `wait_ms`: time spent waiting for the store lock |
+| `zip read` | `zip_bytes`, `entries`, `skipped`, `files`, `dirs`, `bytes`, `duration_ms` |
+| `root found` | `root` (archive id), `dest` (folder id written) |
+| `targets free` | `dir` |
+| `file written` | `entry`, `bytes`, `duration_ms` — one per file |
+| `finished` | `id`, `duration_ms` |
+| `failed` | `step` where it stopped, `err`, `duration_ms` |
+
+A refusal also logs its cause, which the returned sentinel hides: `not a zip` (the zip error), `bad entry name`, `not a single folder` (`reason`, `entry`), `root is not an id`, `destination exists`, `target exists`, `entry leaves destination`, `write file`. A failed extract writes `rolled back` at Warn; a file it cannot remove is an Error with its `path`.
+
 ## Errors
 
 | Sentinel | When |

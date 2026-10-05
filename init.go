@@ -97,7 +97,7 @@ func (db *DB) releaseLock(write bool) {
 	} else {
 		err = db.lk.RUnlock()
 	}
-	if err != nil && db.log != nil {
-		db.log.Error("unlock failed")
+	if err != nil {
+		db.log.Error("unlock failed", "root", db.root, "write", write, "err", err)
 	}
 }

@@ -136,9 +136,7 @@ func (db *DB) writeBytesClose(file *os.File, data []byte) error {
 	}
 	if err := fs.Sync(file); err != nil {
 		_ = fs.Close(file)
-		if db.log != nil {
-			db.log.Error("sync failed")
-		}
+		db.log.Error("sync failed", "path", file.Name(), "err", err)
 		return err
 	}
 	return fs.Close(file)

@@ -85,9 +85,7 @@ func (db *DB) writeJSONCreate(path string, env envelope) error {
 	}
 	if err := fs.Sync(file); err != nil {
 		_ = fs.Close(file)
-		if db.log != nil {
-			db.log.Error("sync failed")
-		}
+		db.log.Error("sync failed", "path", path, "err", err)
 		return err
 	}
 	return fs.Close(file)
@@ -126,9 +124,7 @@ func (db *DB) writeFileReplace(path string, data []byte) error {
 	if err := fs.Sync(file); err != nil {
 		_ = fs.Close(file)
 		_ = fs.RemoveFile(tmp)
-		if db.log != nil {
-			db.log.Error("sync failed")
-		}
+		db.log.Error("sync failed", "path", tmp, "err", err)
 		return err
 	}
 	if err := fs.Close(file); err != nil {

@@ -36,7 +36,7 @@ func main() {
 | Option | Default | When to use |
 |---|---|---|
 | `WithPretty()` | compact JSON | Human-readable `.info.json` and entry files (tab indent) |
-| `WithLogger(log)` | discard | Unexpected sync/close; never logs payload bytes |
+| `WithLogger(log)` | discard | Failures and import steps; pass a `*slog.Logger`; never logs payload bytes — see [Export and import](Export-and-Import#logs) |
 | `WithNoLockFile()` | lock **on** | Tests and benchmarks only — see [Testing](Testing) |
 | `WithLockFile()` | already the default | Turn locking back on after another option |
 | `WithLockTimeout(d)` | 10 minutes | Steal a stale lock; `d <= 0` keeps the default — see [Locking](Locking) |

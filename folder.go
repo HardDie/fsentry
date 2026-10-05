@@ -37,8 +37,8 @@ func (db *DB) CreateFolder[T any](name string, data T, path ...string) (FolderIn
 			return err
 		}
 		if err := db.writeInfoCreate(dir, disk); err != nil {
-			if rmErr := fs.RemoveFolder(dir); rmErr != nil && db.log != nil {
-				db.log.Error("remove folder after info create failed")
+			if rmErr := fs.RemoveFolder(dir); rmErr != nil {
+				db.log.Error("remove folder after info create failed", "path", dir, "err", rmErr)
 			}
 			return err
 		}

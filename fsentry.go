@@ -8,14 +8,25 @@ import (
 	"github.com/HardDie/fsentry/internal/lock"
 )
 
-// Logger receives unexpected sync or close failures. Payload bytes are never logged.
-// A nil Logger on *DB discards all messages.
+// Logger receives the store's log lines, shaped like log/slog: a short
+// lowercase message, then key-value pairs ("err", err; "path", p).
+// A *slog.Logger satisfies it. Error and Warn are unexpected failures
+// (sync, unlock, rollback); Debug follows long operations step by step (import).
+// Payload bytes are never logged. Without WithLogger, lines are discarded.
 type Logger interface {
 	Debug(msg string, args ...any)
 	Info(msg string, args ...any)
 	Warn(msg string, args ...any)
 	Error(msg string, args ...any)
 }
+
+// discardLogger is the default Logger: it drops every line.
+type discardLogger struct{}
+
+func (discardLogger) Debug(string, ...any) {}
+func (discardLogger) Info(string, ...any)  {}
+func (discardLogger) Warn(string, ...any)  {}
+func (discardLogger) Error(string, ...any) {}
 
 // Option configures a *DB created by New.
 type Option func(*DB)
@@ -28,6 +39,7 @@ func WithPretty() Option {
 }
 
 // WithLogger sets the logger. A nil log is ignored and the discard default stays.
+// Debug lines are many on an import: one per file. Filter them in the logger.
 func WithLogger(log Logger) Option {
 	return func(db *DB) {
 		if log == nil {
@@ -81,7 +93,7 @@ type DB struct {
 // lock, or validate that root exists. Empty root is stored as empty (Init
 // will fail with ErrBadPath). Otherwise root is filepath.Clean'd.
 func New(root string, opts ...Option) *DB {
-	db := &DB{root: root}
+	db := &DB{root: root, log: discardLogger{}}
 	if root != "" {
 		db.root = filepath.Clean(root)
 	}
