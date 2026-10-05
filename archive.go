@@ -73,8 +73,28 @@ func (db *DB) ExportFolder(w io.Writer, name string, path ...string) error {
 // (`*.tmp`) are skipped.
 // A failed import removes files and directories this call created.
 // To import one folder archive, use ImportFolder.
+// To follow a long import, use ImportWithProgress.
 func (db *DB) Import(r io.Reader, pathSegs ...string) error {
-	return db.importZip(r, pathSegs...)
+	return db.importZip(r, nil, pathSegs...)
+}
+
+// ImportProgress is one reading of a running import.
+// Files counts extracted files; directories are not counted.
+// Bytes counts their uncompressed size, as the zip headers declare it.
+type ImportProgress struct {
+	Files      int
+	FilesTotal int
+	Bytes      int64
+	BytesTotal int64
+}
+
+// ImportWithProgress is Import that reports how far extraction got.
+// progress is called once before the first file (Files is 0), then after
+// every file written. A nil progress is the same as Import.
+// progress runs while the store holds its write lock: it must not call the
+// same *DB, and it should return quickly.
+func (db *DB) ImportWithProgress(r io.Reader, progress func(ImportProgress), pathSegs ...string) error {
+	return db.importZip(r, progress, pathSegs...)
 }
 
 // ImportFolder extracts one folder archive into the directory at path, which
@@ -93,7 +113,16 @@ func (db *DB) Import(r io.Reader, pathSegs ...string) error {
 // An existing folder with the destination id is ErrExist and is not modified.
 // Other children of path are not touched. A failed import removes files and
 // directories this call created.
+// To follow a long import, use ImportFolderWithProgress.
 func (db *DB) ImportFolder(r io.Reader, name string, path ...string) (string, error) {
+	return db.ImportFolderWithProgress(r, name, nil, path...)
+}
+
+// ImportFolderWithProgress is ImportFolder that reports how far extraction
+// got. progress is called as in ImportWithProgress; it is not called when the
+// archive is refused before any file is written. A nil progress is the same
+// as ImportFolder.
+func (db *DB) ImportFolderWithProgress(r io.Reader, name string, progress func(ImportProgress), path ...string) (string, error) {
 	if r == nil {
 		return "", ErrBadArchive
 	}
@@ -164,7 +193,7 @@ func (db *DB) ImportFolder(r io.Reader, name string, path ...string) (string, er
 			}
 		}
 		var created []string
-		err = extractZip(parent, entries, &created)
+		err = extractZip(parent, entries, &created, progress)
 		if err != nil {
 			rollbackCreated(created)
 			return err
@@ -175,7 +204,7 @@ func (db *DB) ImportFolder(r io.Reader, name string, path ...string) (string, er
 	return id, err
 }
 
-func (db *DB) importZip(r io.Reader, pathSegs ...string) error {
+func (db *DB) importZip(r io.Reader, progress func(ImportProgress), pathSegs ...string) error {
 	if r == nil {
 		return ErrBadArchive
 	}
@@ -213,7 +242,7 @@ func (db *DB) importZip(r io.Reader, pathSegs ...string) error {
 			}
 		}
 		var created []string
-		err = extractZip(dir, entries, &created)
+		err = extractZip(dir, entries, &created, progress)
 		if err != nil {
 			rollbackCreated(created)
 			return err
@@ -472,7 +501,17 @@ func copyFileToWriter(w io.Writer, file *os.File) error {
 	}
 }
 
-func extractZip(dir string, entries []zipEntry, created *[]string) error {
+func extractZip(dir string, entries []zipEntry, created *[]string, progress func(ImportProgress)) error {
+	var p ImportProgress
+	if progress != nil {
+		for _, e := range entries {
+			if !e.dir {
+				p.FilesTotal++
+				p.BytesTotal += e.size()
+			}
+		}
+		progress(p)
+	}
 	for _, e := range entries {
 		dest := filepath.Join(dir, filepath.FromSlash(e.rel))
 		if !underRoot(dir, dest) {
@@ -491,8 +530,24 @@ func extractZip(dir string, entries []zipEntry, created *[]string) error {
 			return err
 		}
 		*created = append(*created, dest)
+		if progress != nil {
+			p.Files++
+			p.Bytes += e.size()
+			progress(p)
+		}
 	}
 	return nil
+}
+
+// size is the uncompressed size the entry writes.
+func (e zipEntry) size() int64 {
+	if e.body != nil {
+		return int64(len(e.body))
+	}
+	if e.file == nil {
+		return 0
+	}
+	return int64(e.file.UncompressedSize64) //nolint:gosec // zip sizes fit in int64
 }
 
 func extractZipFile(zf *zip.File, body []byte, dest string) error {

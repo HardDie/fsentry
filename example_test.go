@@ -687,6 +687,60 @@ func ExampleDB_ImportFolder() {
 	// renamed draw
 }
 
+func ExampleDB_ImportWithProgress() {
+	src, _, cleanupSrc := exampleDB()
+	defer cleanupSrc()
+	if _, err := src.CreateEntry("settings", note{Body: "hello"}); err != nil {
+		panic(err)
+	}
+	var buf bytes.Buffer
+	if err := src.Export(&buf); err != nil {
+		panic(err)
+	}
+
+	dst, _, cleanupDst := exampleDB()
+	defer cleanupDst()
+	err := dst.ImportWithProgress(bytes.NewReader(buf.Bytes()), func(p fsentry.ImportProgress) {
+		fmt.Printf("%d of %d files\n", p.Files, p.FilesTotal)
+	})
+	if err != nil {
+		panic(err)
+	}
+	// Output:
+	// 0 of 1 files
+	// 1 of 1 files
+}
+
+func ExampleDB_ImportFolderWithProgress() {
+	src, _, cleanupSrc := exampleDB()
+	defer cleanupSrc()
+	if _, err := src.CreateFolder("My Game", meta{Kind: "game"}); err != nil {
+		panic(err)
+	}
+	if _, err := src.CreateEntry("Rules", note{Body: "draw"}, "My Game"); err != nil {
+		panic(err)
+	}
+	var buf bytes.Buffer
+	if err := src.ExportFolder(&buf, "My Game"); err != nil {
+		panic(err)
+	}
+
+	dst, _, cleanupDst := exampleDB()
+	defer cleanupDst()
+	id, err := dst.ImportFolderWithProgress(bytes.NewReader(buf.Bytes()), "", func(p fsentry.ImportProgress) {
+		fmt.Printf("%d of %d files\n", p.Files, p.FilesTotal)
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(id)
+	// Output:
+	// 0 of 2 files
+	// 1 of 2 files
+	// 2 of 2 files
+	// my_game
+}
+
 func ExampleDB_Validate() {
 	db, dir, cleanup := exampleDB()
 	defer cleanup()

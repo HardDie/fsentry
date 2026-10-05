@@ -192,6 +192,8 @@ No global state. Production callers do not pass `WithNoLockFile()`.
 (*DB) Import(r io.Reader, path ...string) error
 (*DB) ExportFolder(w io.Writer, name string, path ...string) error
 (*DB) ImportFolder(r io.Reader, name string, path ...string) (string, error)
+(*DB) ImportWithProgress(r io.Reader, progress func(ImportProgress), path ...string) error
+(*DB) ImportFolderWithProgress(r io.Reader, name string, progress func(ImportProgress), path ...string) (string, error)
 (*DB) Validate(path ...string) ([]Problem, error)
 ```
 
@@ -229,6 +231,7 @@ Language: `go 1.27` in `go.mod` (generic methods). CI and local toolchain: lates
 - Update replaces `data` and bumps `updatedAt`; does not rename.
 - `Export` writes a zip of the directory at `path` (empty = root). Zip paths use `/`. Skip `.fsentry.lock` and write temps (`*.tmp`), on export and on import. Non-root export prefixes entries with that folder's ID (DeckBuilder `ArchiveFolder`). `Import` extracts into `path`; existing files are `ErrExist`; zip-slip is `ErrBadArchive`; failed extract rolls back files this call created.
 - `ExportFolder(w, name, path…)` writes one folder and its children. `name` is that folder; `path` is the parent chain (a DeckBuilder game is `ExportFolder(w, gameID, "games")`). The zip's top-level folder is that folder's ID. `ImportFolder(r, name, path…)` extracts that archive as a child of `path` inside an existing store and returns the written folder id. Empty `name` keeps the archive id. A non-empty `name` rewrites the zip root to `NameToID(name)` and updates `.info.json` id/name without bumping timestamps, so an existing folder with the archive id does not collide. The destination id, if it already exists, is `ErrExist` and is left unchanged. Several root folders, a file at the zip root, or a root that is not an id is `ErrBadArchive`. Missing `ExportFolder` source is `ErrNotExist` (same as `GetFolder`).
+- `ImportWithProgress` / `ImportFolderWithProgress` are `Import` / `ImportFolder` plus a callback ([ADR 014](docs/architecture/014-import-progress-callback.md)). `ImportProgress{Files, FilesTotal, Bytes, BytesTotal}` counts files (not directories) and their uncompressed size from the zip headers (a rewritten `.info.json` counts its new body). It is called once before the first file, then after each file. It is not called when the archive is refused before extraction. It runs under the write lock, so it must not call the same `*DB`. A nil callback is the plain call.
 - `Validate` walks the tree (empty `path` = root) and returns every on-disk defect (`Problem`). It does not repair. Nil slice means the tree matches the contract (IDs, envelopes, no stray files). Walk errors (missing dest, permission) are `err`.
 
 **Errors** (`errors.Is` on package sentinels; OS errors are classified then dropped so `wrap` is zero-alloc):

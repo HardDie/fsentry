@@ -17,3 +17,4 @@ ADRs live in this folder. Number them in order (`001`, `002`, …). Status is on
 | [011](011-validate-problems.md) | Validate walks the tree and reports problems; it does not repair | Accepted |
 | [012](012-shared-lock-for-reads.md) | Shared lock file for reads, exclusive for writes | Accepted |
 | [013](013-atomic-binary-update.md) | `UpdateBinary` writes a temp file and renames it | Accepted |
+| [014](014-import-progress-callback.md) | Optional progress callback for zip import | Accepted |

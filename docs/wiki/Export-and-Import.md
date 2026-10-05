@@ -96,6 +96,18 @@ Existing files are not overwritten (`ErrExist`). Names that would leave the dest
 
 If the reader also implements `io.ReaderAt` and `Size() int64` (for example `*bytes.Reader`), the zip is opened without copying the whole archive into a second buffer.
 
+## Import progress
+
+A large archive takes a while: every file is written and synced. `ImportWithProgress` and `ImportFolderWithProgress` take a callback that reports how far extraction got:
+
+```go
+id, err := db.ImportFolderWithProgress(bytes.NewReader(data), "", func(p fsentry.ImportProgress) {
+	fmt.Printf("%d of %d files, %d of %d bytes\n", p.Files, p.FilesTotal, p.Bytes, p.BytesTotal)
+}, "games")
+```
+
+The callback runs once before the first file (`Files` is 0), then after each file. Directories are not counted; bytes are the uncompressed sizes from the zip headers. It is not called when the archive is refused before anything is written (`ErrExist`, `ErrBadArchive`). It runs while the store holds its write lock: do not call the same `*DB` from it, and return quickly (store the numbers for a poller). A nil callback is the plain `Import` / `ImportFolder`.
+
 ## Errors
 
 | Sentinel | When |
