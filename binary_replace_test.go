@@ -31,6 +31,9 @@ func TestUpdateBinaryRenamesIntoPlace(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// On Windows os.Stat loads the file ID lazily, on the first SameFile call.
+	// Load it now, or it would be read from the new file after the rename.
+	os.SameFile(before, before)
 	if err := db.UpdateBinary("cover", []byte("new")); err != nil {
 		t.Fatal(err)
 	}
